@@ -100,7 +100,7 @@ small{display:block;font-size:.76em;font-weight:400;opacity:.85}
 .pinout.warn{color:#8A3B0F}
 .sh-art.photo{background:none;border:0;padding:0;aspect-ratio:auto}
 .shimg,.chimg{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:var(--r);border:1px solid var(--line)}
-.chimg{margin:0 0 16px}
+.chimg{margin:0 0 18px;max-width:460px}
 .bdone{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:clamp(20px,3vw,32px);display:grid;gap:14px}
 .bdone h3{margin:0}
 .bdone textarea{font:inherit;font-size:.95rem;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);width:100%}
