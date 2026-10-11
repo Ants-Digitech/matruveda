@@ -648,15 +648,15 @@ main{padding-bottom:12px}
 .jcard .jart img,.jcard .jart .sil,.svimg img,.fc img{transition:transform .6s cubic-bezier(.2,.7,.3,1)}
 .jcard:hover .jart img,.jcard:hover .jart .sil,.scard:hover .svimg img,.fc:hover img{transform:scale(1.04)}
 /* the English name of a stage, plain enough for a reader with no Marathi */
-.enline{display:block;font-family:var(--disp);font-style:italic;font-size:1.02rem;color:var(--accT);line-height:1.3;margin:2px 0}
-.pcard .enline{font-size:.95rem}
-.jn .enline,.ocard .enline{font-size:.88rem;font-style:normal;font-weight:600}
+.enline{display:block;font-family:var(--body);font-weight:700;font-size:.82rem;letter-spacing:.11em;text-transform:uppercase;color:var(--accT);line-height:1.35;margin:3px 0}
+.pcard .enline{font-size:.76rem}
+.jn .enline,.ocard .enline{font-size:.7rem;letter-spacing:.08em}
 .scard .enline{font-size:1.05rem;margin:2px 0 4px}
-.jbody .enline{margin:0 0 4px}
-.enbig{font-family:var(--disp);font-style:italic;font-size:clamp(1.15rem,2vw,1.5rem);color:var(--accT);margin:2px 0 8px;line-height:1.3}
-.enbig span{font-family:var(--body);font-style:normal;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-left:8px}
-.chapter .enbig{font-size:1.2rem;margin:0 0 8px}
-.dd a em{font-style:italic;font-family:var(--disp);font-size:.95rem;color:var(--accT)}
+.jbody .enline{margin:4px 0 2px;font-size:.84rem}
+.enbig{font-family:var(--body);font-weight:700;font-size:clamp(1rem,1.5vw,1.2rem);letter-spacing:.1em;text-transform:uppercase;color:var(--accT);margin:4px 0 10px;line-height:1.35}
+.enbig span{font-family:var(--disp);font-weight:400;font-style:italic;font-size:.95rem;letter-spacing:0;text-transform:none;color:var(--muted);margin-left:10px}
+.chapter .enbig{font-size:1rem;margin:0 0 8px}
+.dd a em{font-style:normal;font-family:var(--body);font-weight:700;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accT)}
 .dd a small{font-size:.72rem}
 /* 1. light falls from the lotus onto the month picker */
 .sec.anytime{overflow:hidden}
