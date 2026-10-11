@@ -18,6 +18,13 @@ try{ if ("scrollRestoration" in history) history.scrollRestoration = "manual"; }
 /* the menu item of the page you are on */
 (function(){ var file = (location.pathname.split("/").pop() || "index.html").toLowerCase(); document.querySelectorAll(".links a[href]").forEach(function(a){ var h = (a.getAttribute("href") || "").split("#")[0].toLowerCase(); var inDd = !!a.closest(".dd"); var on = inDd ? h === file : (h === file || (file.indexOf("stage-") === 0 && h === "journey.html")); a.classList.toggle("on", on); if (on) a.setAttribute("aria-current", "page"); }); })();
 /* journey dropdown: hover on desktop, first tap opens on touch, Esc closes */
+(function(){ document.querySelectorAll("[data-ddtog]").forEach(function(t){ t.addEventListener("click", function(e){
+  e.preventDefault(); e.stopPropagation();
+  var g = t.closest("[data-dd]"); if (!g) return;
+  var open = !g.classList.contains("open"); g.classList.toggle("open", open);
+  t.setAttribute("aria-expanded", String(open));
+  var a = g.querySelector(":scope > a"); if (a) a.setAttribute("aria-expanded", String(open));
+}); }); })();
 (function(){ document.querySelectorAll("[data-dd]").forEach(function(dd){ var a = dd.querySelector(":scope > a"); if (!a) return;
   a.addEventListener("click", function(e){ if (isTouch && !dd.classList.contains("open") && window.innerWidth > 1024){ e.preventDefault(); dd.classList.add("open"); a.setAttribute("aria-expanded", "true"); } });
   a.addEventListener("keydown", function(e){ if (e.key === "ArrowDown" || e.key === " "){ e.preventDefault(); dd.classList.add("open"); a.setAttribute("aria-expanded", "true"); var f = dd.querySelector(".dd a"); if (f) f.focus(); } });
@@ -332,13 +339,14 @@ document.querySelectorAll("[data-practice]").forEach(function(w){
 
 /* ---------- booking: compose a WhatsApp message (+ optional live phone preview [data-bubble]) ---------- */
 var PHONE = "917760498085";
+var ENDPOINT = "";
 function val(f, n){ var el = f.elements[n]; if (!el) return ""; if (el.length && el[0] && el[0].type === "radio"){ for (var i=0;i<el.length;i++) if (el[i].checked) return el[i].value; return ""; } return (el.value || "").trim(); }
 function line(k, v){ return v ? k + ": " + v + "\n" : ""; }
 function compose(f){
   var prog = val(f,"program") || "(program)";
   var sf = f.querySelector("[data-stagefield]");
   var stage = (sf && sf.hidden) ? "" : val(f,"stage");
-  return "नमस्कार Matruveda,\nI would like to know about " + prog + ".\n" + line("Name", val(f,"name")) + line("For", val(f,"for")) + line("Stage", stage) + line("City", val(f,"city")) + line("Preferred time", val(f,"slot")) + line("Contact", val(f,"phone")) + (val(f,"msg") ? "\n" + val(f,"msg") + "\n" : "") + "\n(sent from matruveda.in)";
+  return "नमस्कार Matruveda,\nI would like to know about " + prog + ".\n" + line("Name", val(f,"name")) + line("For", val(f,"for")) + line("Stage", stage) + line("Pincode", val(f,"pincode")) + line("Place", [val(f,"city"), val(f,"state"), val(f,"country")].filter(Boolean).join(", ")) + line("Preferred time", val(f,"slot")) + line("Contact", val(f,"phone")) + (val(f,"msg") ? "\n" + val(f,"msg") + "\n" : "") + "\n(sent from matruveda.in)";
 }
 document.querySelectorAll("[data-booking]").forEach(function(f){
   var q = new URLSearchParams(location.search).get("p"), sel = f.elements.program;
@@ -358,13 +366,122 @@ document.querySelectorAll("[data-booking]").forEach(function(f){
   syncProgram();
   var prev = document.querySelector("[data-bubble]");
   if (prev){ var paint = function(){ prev.textContent = compose(f); }; f.addEventListener("input", paint); f.addEventListener("change", paint); paint(); }
+  /* a pincode fills in city, state and country */
+  var pin = f.elements.pincode, pinout = f.querySelector("[data-pinout]");
+  if (pin){
+    var lastPin = "";
+    var setPlace = function(city, state, country){
+      if (f.elements.city) f.elements.city.value = city || "";
+      if (f.elements.state) f.elements.state.value = state || "";
+      if (f.elements.country) f.elements.country.value = country || "";
+    };
+    var lookup = function(){
+      var v = (pin.value || "").replace(/[^0-9]/g, "").slice(0, 6);
+      if (pin.value !== v) pin.value = v;
+      if (v === lastPin) return;
+      lastPin = v;
+      setPlace("", "", "India");
+      if (!pinout) return;
+      if (v.length !== 6){ pinout.textContent = ""; pinout.className = "pinout"; return; }
+      pinout.textContent = "Looking up " + v; pinout.className = "pinout";
+      var settled = false;
+      var fail = function(){ if (settled) return; settled = true;
+        setPlace("", "", "India");
+        pinout.textContent = "We could not look that up. Send anyway and we will confirm.";
+        pinout.className = "pinout warn"; };
+      setTimeout(fail, 7000);
+      try {
+        fetch("https://api.postalpincode.in/pincode/" + v).then(function(r){ return r.json(); }).then(function(d){
+          if (settled) return;
+          var rec = d && d[0], po = rec && rec.PostOffice && rec.PostOffice[0];
+          if (!po || rec.Status !== "Success"){ fail(); return; }
+          settled = true;
+          setPlace(po.District || po.Division || "", po.State || "", po.Country || "India");
+          pinout.textContent = [po.District, po.State, po.Country].filter(Boolean).join(", ");
+          pinout.className = "pinout ok";
+        })["catch"](fail);
+      } catch(e){ fail(); }
+    };
+    pin.addEventListener("input", lookup);
+    pin.addEventListener("blur", lookup);
+  }
+
+  /* say exactly what is missing rather than refusing silently */
+  var errbox = f.querySelector("[data-errbox]");
+  var labelOf = function(el){
+    var lb = el.closest("label"), sp = lb && lb.querySelector("span");
+    if (sp) return sp.textContent.replace("*", "").replace("?", "").trim();
+    var fs = el.closest("fieldset"), lg = fs && fs.querySelector("legend");
+    return lg ? lg.textContent.trim() : (el.name || "this field");
+  };
+  var check = function(){
+    var missing = [];
+    f.querySelectorAll("[required]").forEach(function(el){
+      if (el.type !== "hidden" && el.offsetParent === null) return;
+      var v = (el.value || "").trim(), bad = !v, digits = v.replace(/[^0-9]/g, "");
+      if (!bad && el.name === "phone") bad = digits.length < 10;
+      if (!bad && el.name === "pincode") bad = !/^[1-9][0-9]{5}$/.test(digits);
+      el.classList.toggle("bad", bad);
+      if (bad){ el.setAttribute("aria-invalid", "true"); missing.push({ el: el, label: labelOf(el) }); }
+      else el.removeAttribute("aria-invalid");
+    });
+    return missing;
+  };
+  f.addEventListener("input", function(e){ if (e.target.classList && e.target.classList.contains("bad")) check(); });
+
   f.addEventListener("submit", function(ev){ ev.preventDefault();
-    var prog = val(f,"program"), phone = val(f,"phone");
-    if (!prog || !phone){ f.classList.add("shake"); setTimeout(function(){ f.classList.remove("shake"); }, 500); var m = f.querySelector("[data-err]"); if (!m){ m = document.createElement("p"); m.className = "err"; m.setAttribute("data-err",""); f.appendChild(m); } m.textContent = "Please choose a program and enter your WhatsApp number."; return; }
+    var missing = check();
+    if (missing.length){
+      if (errbox){
+        var items = "";
+        for (var i = 0; i < missing.length; i++) items += "<li>" + missing[i].label + "</li>";
+        errbox.innerHTML = "<strong>" + (missing.length === 1 ? "One thing is still needed:" : missing.length + " things are still needed:") + "</strong><ul>" + items + "</ul>";
+        errbox.hidden = false;
+        errbox.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
+      }
+      f.classList.add("shake"); setTimeout(function(){ f.classList.remove("shake"); }, 500);
+      try { missing[0].el.focus({ preventScroll: true }); } catch(e){}
+      return;
+    }
+    if (errbox) errbox.hidden = true;
     var msg = compose(f), url = "https://wa.me/" + PHONE + "?text=" + encodeURIComponent(msg);
     var done = f.parentNode.querySelector("[data-bdone]");
-    if (done){ f.hidden = true; done.hidden = false; var a = done.querySelector("[data-walink]"); if (a) a.href = url; var ta = done.querySelector("[data-msg]"); if (ta){ ta.value = msg; var selAll = function(){ try{ ta.focus(); ta.setSelectionRange(0, ta.value.length); }catch(e){ try{ ta.select(); }catch(e2){} } }; selAll(); var rs = done.querySelector("[data-reselect]"); if (rs) rs.addEventListener("click", selAll); } done.scrollIntoView({behavior: reduced ? "auto" : "smooth", block: "start"}); }
-    try{ window.open(url, "_blank", "noopener"); }catch(e){}
+    var showDone = function(heading, note, showWa){
+      if (!done){ if (showWa){ try { window.open(url, "_blank", "noopener"); } catch(e){} } return; }
+      f.hidden = true; done.hidden = false;
+      var h = done.querySelector("h3"); if (h) h.textContent = heading;
+      var p0 = done.querySelector("p"); if (p0) p0.textContent = note;
+      var a = done.querySelector("[data-walink]"); if (a){ a.href = url; a.hidden = !showWa; }
+      var cp = done.querySelector(".small"); if (cp) cp.hidden = !showWa;
+      var ta = done.querySelector("[data-msg]");
+      if (ta){
+        ta.value = msg; ta.hidden = !showWa;
+        var selAll = function(){ try { ta.focus(); ta.setSelectionRange(0, ta.value.length); } catch(e){ try { ta.select(); } catch(e2){} } };
+        if (showWa) selAll();
+        var rs = done.querySelector("[data-reselect]"); if (rs){ rs.hidden = !showWa; rs.addEventListener("click", selAll); }
+      }
+      done.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+    };
+    if (ENDPOINT){
+      var btn = f.querySelector("button[type=submit]");
+      if (btn){ btn.disabled = true; btn.setAttribute("data-label", btn.innerHTML); btn.textContent = "Sending"; }
+      var payload = {}, keys = ["name", "phone", "program", "for", "stage", "pincode", "city", "state", "country", "slot", "msg"];
+      for (var k = 0; k < keys.length; k++) payload[keys[k]] = val(f, keys[k]);
+      payload.page = location.pathname.split("/").pop();
+      payload.message = msg;
+      var restore = function(){ if (btn){ btn.disabled = false; var l = btn.getAttribute("data-label"); if (l) btn.innerHTML = l; } };
+      try {
+        fetch(ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) })
+          .then(function(r){ if (!r.ok) throw new Error("bad status"); restore();
+            showDone("We have your request.", "It reached Matruveda just now. We call back within a day.", false); })
+          ["catch"](function(){ restore();
+            showDone("Send it on WhatsApp.", "We could not reach our desk just now, so please send this on WhatsApp instead.", true);
+            try { window.open(url, "_blank", "noopener"); } catch(e){} });
+      } catch(e){ restore(); showDone("Send it on WhatsApp.", "We could not reach our desk just now, so please send this on WhatsApp instead.", true); }
+    } else {
+      showDone("Your message is ready.", "If WhatsApp did not open, use the button below.", true);
+      try { window.open(url, "_blank", "noopener"); } catch(e){}
+    }
   });
 });
 document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = function(){ fs.querySelectorAll("label").forEach(function(l){ l.classList.toggle("on", l.querySelector("input").checked); }); }; fs.addEventListener("change", paint); paint(); });

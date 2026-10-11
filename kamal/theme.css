@@ -88,6 +88,16 @@ small{display:block;font-size:.76em;font-weight:400;opacity:.85}
 .bform .err{color:#B3261E;font-weight:600;margin:0}
 .bform.shake{animation:shake .4s}
 @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.req{font-style:normal;color:#B3261E;font-weight:700;margin-left:1px}
+.reqnote{margin:0 0 2px;font-size:.82rem;color:var(--muted)}
+.errbox{background:#FDECEA;border:1px solid #F2B8B5;border-left:4px solid #B3261E;border-radius:12px;padding:12px 14px;color:#5F1412}
+.errbox strong{display:block;font-size:.92rem;margin-bottom:4px}
+.errbox ul{margin:0;padding-left:20px;font-size:.88rem;line-height:1.5}
+.bform .bad{border-color:#B3261E;background:#FDECEA}
+.bform .bad:focus{outline:2px solid #B3261E;outline-offset:1px}
+.pinout{display:block;margin-top:5px;font-size:.8rem;color:var(--muted);min-height:1.1em}
+.pinout.ok{color:var(--live);font-weight:600}
+.pinout.warn{color:#8A3B0F}
 .bdone{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:clamp(20px,3vw,32px);display:grid;gap:14px}
 .bdone h3{margin:0}
 .bdone textarea{font:inherit;font-size:.95rem;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);width:100%}
@@ -495,7 +505,19 @@ h1,h2,h3{color:var(--struct2)}
 .dd a.all{grid-template-columns:1fr;border-top:1px solid var(--line);border-radius:0;margin-top:6px;padding-top:12px;color:var(--accT);font-weight:700;justify-items:start}
 .dd a.all:hover{background:none}
 .dd a.all{color:#8F4609}
-@media (max-width:1024px){.dd{position:static;opacity:1;visibility:visible;transform:none;box-shadow:none;border:0;padding:0 0 0 12px;min-width:0;background:transparent}.links .has-dd>a::after{display:none}.dd a{min-height:40px;border-bottom:0}}
+.ddtog{display:none;width:46px;min-height:44px;border:0;background:none;place-items:center;cursor:pointer;color:var(--struct);padding:0}
+.ddtog i{display:block;width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translate(-2px,-2px);transition:transform .25s}
+.has-dd.open .ddtog i{transform:rotate(225deg) translate(-1px,-1px)}
+@media (max-width:1024px){.dd{position:static;opacity:1;visibility:visible;transform:none;box-shadow:none;border:0;padding:0 0 10px 10px;min-width:0;background:transparent;display:none}.has-dd.open .dd{display:grid}.links .has-dd>a::after{display:none}.dd a{min-height:44px;border-bottom:0}.has-dd{display:grid;grid-template-columns:minmax(0,1fr) 46px;align-items:center;border-bottom:1px solid var(--line)}.has-dd>a{border-bottom:0}.has-dd .dd{grid-column:1 / -1}.ddtog{display:grid}}
+/* breadcrumbs */
+.crumbs{border-bottom:1px solid var(--line);background:var(--bg2)}
+.crumbs ol{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;margin:0;padding:0;list-style:none;font-size:.82rem}
+.crumbs li{display:flex;align-items:center;gap:8px;color:var(--muted)}
+.crumbs li+li::before{content:"/";color:var(--line2)}
+.crumbs a,.crumbs span{min-height:44px;display:inline-flex;align-items:center}
+.crumbs a{color:var(--muted);text-decoration:none}
+.crumbs a:hover{color:var(--accT);text-decoration:underline}
+.crumbs [aria-current] span{color:var(--struct2);font-weight:600}
 /* nav */
 .nav{position:sticky;top:0;z-index:50;transition:background .35s,box-shadow .35s;border-bottom:1px solid transparent}
 .nav.scrolled{background:rgba(251,246,238,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-color:var(--line)}
@@ -939,7 +961,7 @@ body.modal-open{overflow:hidden}
 .ftr .credits{margin:12px 0 0;font-size:.74rem;color:#B9A890}
 .ftr .credits a{text-decoration:underline}
 @media (max-width:1024px){
-  .links{position:fixed;inset:76px 0 0 0;background:var(--bg);flex-direction:column;align-items:stretch;padding:16px 24px;gap:4px;transform:translateX(100%);transition:transform .3s;z-index:49;overflow:auto}
+  .links{position:fixed;inset:76px 0 0 0;background:var(--bg);flex-direction:column;align-items:stretch;padding:16px 24px 96px;gap:4px;transform:translateX(100%);transition:transform .3s;z-index:49;overflow:auto;-webkit-overflow-scrolling:touch}
   .links.open{transform:none}
   .links a{padding:14px 10px;border-bottom:1px solid var(--line);justify-items:start;font-size:1.05rem}
   .menu{display:block}
