@@ -379,3 +379,24 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
 
 }catch(e){ showAll(); if (window.console) console.error(e); }
 })();
+
+(function(){
+  var btn = document.querySelector("[data-pal-open]"), wrap = document.getElementById("palwrap");
+  if (!btn || !wrap) return;
+  var opts = wrap.querySelectorAll("[data-pal-set]");
+  function current(){ return document.documentElement.getAttribute("data-pal") || "haldi"; }
+  function mark(){ var c = current(); for (var i=0;i<opts.length;i++) opts[i].setAttribute("aria-pressed", String(opts[i].getAttribute("data-pal-set") === c)); }
+  function open(v){ wrap.classList.toggle("open", v); btn.setAttribute("aria-expanded", String(v)); btn.style.display = v ? "none" : ""; }
+  btn.addEventListener("click", function(){ mark(); open(true); });
+  var close = wrap.querySelector("[data-pal-close]");
+  if (close) close.addEventListener("click", function(){ open(false); });
+  for (var i=0;i<opts.length;i++) opts[i].addEventListener("click", function(){
+    var id = this.getAttribute("data-pal-set");
+    if (id === "haldi") document.documentElement.removeAttribute("data-pal");
+    else document.documentElement.setAttribute("data-pal", id);
+    try { localStorage.setItem("mv-pal", id); } catch(e){}
+    mark();
+  });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape" && wrap.classList.contains("open")) open(false); });
+  mark();
+})();
