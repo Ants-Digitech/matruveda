@@ -480,17 +480,17 @@ h1,h2,h3{color:var(--struct2)}
 .links .has-dd>a{gap:6px}
 .links .has-dd>a::after{content:"";width:7px;height:7px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .25s}
 .links .has-dd.open>a::after,.links .has-dd:hover>a::after{transform:rotate(225deg) translateY(-2px)}
-.dd{position:absolute;left:-8px;top:100%;min-width:340px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px;box-shadow:0 30px 50px -30px rgba(43,30,20,.5);display:grid;gap:2px;opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .22s,transform .22s,visibility .22s;z-index:60}
+.dd{position:absolute;left:-8px;top:100%;min-width:290px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px;box-shadow:0 30px 50px -30px rgba(43,30,20,.5);display:grid;gap:2px;opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .22s,transform .22s,visibility .22s;z-index:60}
 .links .has-dd:hover .dd,.links .has-dd.open .dd,.links .has-dd:focus-within .dd{opacity:1;visibility:visible;transform:none}
-.dd a{display:grid;grid-template-columns:76px minmax(0,1fr);column-gap:12px;align-items:center;justify-items:start;justify-content:start;text-align:left;padding:9px 12px;border-radius:10px;border:0;min-height:44px;white-space:normal;line-height:1.2}
+.dd a{display:grid;grid-template-columns:18px minmax(0,1fr);column-gap:11px;align-items:center;justify-items:start;justify-content:start;text-align:left;padding:9px 12px;border-radius:10px;border:0;min-height:44px;white-space:normal;line-height:1.2}
 .dd a>span{display:block;width:100%}
 .dd a i{justify-self:start}
 .dd a:hover{background:var(--soft);border:0}
 .dd a.on{background:var(--soft);border:0}
 .dd a.on b{color:#8F4609}
-.dd a i{font-style:normal;width:76px;height:42px;display:grid;place-items:center}
-.dd a i svg{width:74px;height:40px;filter:drop-shadow(0 3px 5px rgba(224,122,31,.28))}
-.dd a b{font-weight:400;font-family:var(--dev);font-size:1.05rem;color:var(--struct2)}
+.dd a i{font-style:normal;width:18px;height:11px;display:grid;place-items:center;color:var(--acc)}
+.dd a i svg{width:16px;height:9px;display:block}
+.dd a b{font-weight:600;font-family:var(--body);font-size:1rem;color:var(--struct2);letter-spacing:.01em}
 .dd a small{font-size:.74rem;color:var(--muted)}
 .dd a.all{grid-template-columns:1fr;border-top:1px solid var(--line);border-radius:0;margin-top:6px;padding-top:12px;color:var(--accT);font-weight:700;justify-items:start}
 .dd a.all:hover{background:none}
@@ -679,7 +679,7 @@ main{padding-bottom:12px}
 .enbig{font-family:var(--body);font-weight:700;font-size:clamp(1rem,1.5vw,1.2rem);letter-spacing:.1em;text-transform:uppercase;color:var(--accT);margin:4px 0 10px;line-height:1.35}
 .enbig span{font-family:var(--disp);font-weight:400;font-style:italic;font-size:.95rem;letter-spacing:0;text-transform:none;color:var(--muted);margin-left:10px}
 .chapter .enbig{font-size:1rem;margin:0 0 8px}
-.dd a em{font-style:normal;font-family:var(--body);font-weight:700;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accT)}
+.dd a em{display:block;margin-top:1px;font-style:normal;font-family:var(--body);font-weight:700;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accT)}
 .dd a small{font-size:.72rem}
 /* 1. light falls from the lotus onto the month picker */
 .sec.anytime{overflow:hidden}
