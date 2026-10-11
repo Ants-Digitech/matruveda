@@ -343,6 +343,9 @@ var ENDPOINT = "";
 function val(f, n){ var el = f.elements[n]; if (!el) return ""; if (el.length && el[0] && el[0].type === "radio"){ for (var i=0;i<el.length;i++) if (el[i].checked) return el[i].value; return ""; } return (el.value || "").trim(); }
 function line(k, v){ return v ? k + ": " + v + "\n" : ""; }
 function compose(f){
+  if (f.getAttribute("data-kind") === "guide"){
+    return "नमस्कार Matruveda,\nPlease send me the five free practices as a one page guide.\n" + line("Contact", val(f,"phone")) + "\n(sent from matruveda.in)";
+  }
   var prog = val(f,"program") || "(program)";
   var sf = f.querySelector("[data-stagefield]");
   var stage = (sf && sf.hidden) ? "" : val(f,"stage");
@@ -449,7 +452,7 @@ document.querySelectorAll("[data-booking]").forEach(function(f){
     var showDone = function(heading, note, showWa){
       if (!done){ if (showWa){ try { window.open(url, "_blank", "noopener"); } catch(e){} } return; }
       f.hidden = true; done.hidden = false;
-      var h = done.querySelector("h3"); if (h) h.textContent = heading;
+      var h = done.querySelector("h3, .pch"); if (h) h.textContent = heading;
       var p0 = done.querySelector("p"); if (p0) p0.textContent = note;
       var a = done.querySelector("[data-walink]"); if (a){ a.href = url; a.hidden = !showWa; }
       var cp = done.querySelector(".small"); if (cp) cp.hidden = !showWa;

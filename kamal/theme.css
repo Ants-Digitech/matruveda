@@ -98,6 +98,17 @@ small{display:block;font-size:.76em;font-weight:400;opacity:.85}
 .pinout{display:block;margin-top:5px;font-size:.8rem;color:var(--muted);min-height:1.1em}
 .pinout.ok{color:var(--live);font-weight:600}
 .pinout.warn{color:#8A3B0F}
+.anytime .hd.withphoto{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,46%);gap:clamp(20px,3vw,44px);align-items:center;text-align:left;max-width:none}
+.anytime .hd.withphoto .welcome{margin:0;display:block;width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;object-position:50% 30%;border-radius:var(--r);border:1px solid var(--line)}
+@media (max-width:860px){.anytime .hd.withphoto{grid-template-columns:1fr}.anytime .hd.withphoto .welcome{order:-1}}
+.pcapture{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,360px);gap:22px 32px;align-items:center;background:var(--soft);border:1px solid var(--line2);border-radius:var(--r);padding:clamp(18px,2.6vw,30px);margin-top:28px}
+.pcapture .pch{margin:0 0 6px;font:400 1.25rem/1.25 var(--disp);color:var(--ink)}
+.pcapture .pct p{margin:0;color:var(--muted);font-size:.92rem;line-height:1.55}
+.pcapture form.guide{display:grid;gap:10px;background:none;border:0;padding:0}
+.pcapture form.guide label{display:block}
+.pcapture form.guide input{width:100%}
+.pcapture .bdone{grid-column:1 / -1}
+@media (max-width:760px){.pcapture{grid-template-columns:1fr}}
 .sh-art.photo{background:none;border:0;padding:0;aspect-ratio:auto}
 .shimg,.chimg{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:var(--r);border:1px solid var(--line)}
 .chimg{margin:0 0 18px;max-width:460px}
