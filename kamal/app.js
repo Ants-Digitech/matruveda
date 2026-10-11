@@ -381,15 +381,17 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
 })();
 
 (function(){
-  var btn = document.querySelector("[data-pal-open]"), wrap = document.getElementById("palwrap");
+  var btn = document.querySelector("[data-pal-open]"), wrap = document.getElementById("palwrap"),
+      back = document.querySelector("[data-pal-back]");
   if (!btn || !wrap) return;
   var opts = wrap.querySelectorAll("[data-pal-set]");
   function current(){ return document.documentElement.getAttribute("data-pal") || "haldi"; }
   function mark(){ var c = current(); for (var i=0;i<opts.length;i++) opts[i].setAttribute("aria-pressed", String(opts[i].getAttribute("data-pal-set") === c)); }
-  function open(v){ wrap.classList.toggle("open", v); btn.setAttribute("aria-expanded", String(v)); btn.style.display = v ? "none" : ""; }
-  btn.addEventListener("click", function(){ mark(); open(true); });
+  function open(v){ wrap.classList.toggle("open", v); if (back) back.classList.toggle("open", v); btn.setAttribute("aria-expanded", String(v)); }
+  btn.addEventListener("click", function(e){ e.preventDefault(); mark(); open(true); });
   var close = wrap.querySelector("[data-pal-close]");
   if (close) close.addEventListener("click", function(){ open(false); });
+  if (back) back.addEventListener("click", function(){ open(false); });
   for (var i=0;i<opts.length;i++) opts[i].addEventListener("click", function(){
     var id = this.getAttribute("data-pal-set");
     if (id === "haldi") document.documentElement.removeAttribute("data-pal");
