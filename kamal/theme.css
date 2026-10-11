@@ -601,7 +601,7 @@ main{padding-bottom:12px}
 .scards{align-items:stretch}
 .scol{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:22px 22px 24px;display:grid;align-content:start;gap:6px}
 .scol.fee{background:var(--soft);border-color:var(--line2)}
-.scol.fee .sh,.ocard.here b{color:#8F4609}
+.scol.fee .sh,.ocard.here b,.ocard.here .enline,.dd a.on em{color:#8F4609}
 .sh{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accT);font-family:var(--body);font-weight:700;margin:4px 0 6px}
 .sh+.sh,.slist+.sh{margin-top:16px}
 .slist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
@@ -647,6 +647,17 @@ main{padding-bottom:12px}
 .jcard .jart,.svimg,.fc img,.vbox{overflow:hidden}
 .jcard .jart img,.jcard .jart .sil,.svimg img,.fc img{transition:transform .6s cubic-bezier(.2,.7,.3,1)}
 .jcard:hover .jart img,.jcard:hover .jart .sil,.scard:hover .svimg img,.fc:hover img{transform:scale(1.04)}
+/* the English name of a stage, plain enough for a reader with no Marathi */
+.enline{display:block;font-family:var(--disp);font-style:italic;font-size:1.02rem;color:var(--accT);line-height:1.3;margin:2px 0}
+.pcard .enline{font-size:.95rem}
+.jn .enline,.ocard .enline{font-size:.88rem;font-style:normal;font-weight:600}
+.scard .enline{font-size:1.05rem;margin:2px 0 4px}
+.jbody .enline{margin:0 0 4px}
+.enbig{font-family:var(--disp);font-style:italic;font-size:clamp(1.15rem,2vw,1.5rem);color:var(--accT);margin:2px 0 8px;line-height:1.3}
+.enbig span{font-family:var(--body);font-style:normal;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-left:8px}
+.chapter .enbig{font-size:1.2rem;margin:0 0 8px}
+.dd a em{font-style:italic;font-family:var(--disp);font-size:.95rem;color:var(--accT)}
+.dd a small{font-size:.72rem}
 /* 1. light falls from the lotus onto the month picker */
 .sec.anytime{overflow:hidden}
 .sec.anytime::after{content:"";position:absolute;left:50%;top:-140px;width:min(1100px,130%);height:520px;transform:translateX(-50%);background:radial-gradient(ellipse at 50% 0,rgba(242,162,76,.16),rgba(242,162,76,.06) 42%,rgba(242,162,76,0) 70%);pointer-events:none;z-index:0}
