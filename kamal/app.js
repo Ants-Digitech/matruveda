@@ -533,7 +533,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   var sctx = sky.getContext("2d"), hctx = hx.getContext("2d");
   var W = 0, H = 0, SW = 0, SH = 0, dpr = 1, raf = 0, running = false, narrow = false;
   var fall = [], beads = [], sprites = [], buf = [], tick = 0;
-  var phase = 0, SPIN = 0.0019, TURNS = 2.6, FOCAL = 820;
+  var phase = 0, SPIN = 0.0019, TURNS = 3.4, FOCAL = 820;
   var AX = 0, AY = 0, LEN = 0, RAD = 0, CA = 0, SA = 0;
   var stageTop = 0, stageLeft = 0;
   var STEPS = 5;
@@ -610,10 +610,10 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
 
   function geometry(){
     narrow = window.innerWidth < 900;
-    var leanA = narrow ? -1.08 : -1.16;
-    CA = Math.cos(leanA); SA = Math.sin(leanA);
-    LEN = narrow ? Math.min(SW*0.72, 300) : Math.min(SW*0.80, 640);
-    RAD = narrow ? Math.min(SW*0.17, 62) : Math.min(SW*0.135, 112);
+    CA = 1; SA = 0;                      /* upright: the axis runs straight down the panel */
+    TURNS = narrow ? 2.6 : 3.0;
+    LEN = SH*0.90;
+    RAD = Math.min(SW*0.27, narrow ? 92 : 88);
     AX = SW*0.5; AY = SH*0.5;
   }
   function pointAt(t, f, off){
@@ -673,7 +673,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
       var bd = beads[s]; if (!bd.filled) continue;
       var p = pointAt(bd.t, bd.f, bd.off);
       var rec = buf[n] || (buf[n] = { x:0,y:0,k:0,z:0,r:0,tone:0,st:false,fade:1,glow:0 });
-      var e = Math.min(bd.t, 1 - bd.t)/0.12;
+      var e = Math.min(bd.t, 1 - bd.t)/0.05;
       rec.fade = e >= 1 ? 1 : e*e*(3 - 2*e);
       /* the pair you are reading lights up, and so does the stretch of strand around it */
       rec.glow = bd.rung >= 0 ? 0.5 : 0;        /* the step rungs stay a little brighter */
