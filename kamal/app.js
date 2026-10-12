@@ -533,7 +533,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   var sctx = sky.getContext("2d"), hctx = hx.getContext("2d");
   var W = 0, H = 0, SW = 0, SH = 0, dpr = 1, raf = 0, running = false, narrow = false;
   var fall = [], beads = [], bank = [], buf = [], tick = 0;
-  var phase = 0, SPIN = 0.0016, TURNS = 2.6, FOC = 560, GROOVE = 6.2832*0.615;
+  var phase = 0, SPIN = 0.0016, TURNS = 2.2, FOC = 560, GROOVE = 6.2832*0.615;
   var AX = 0, AY = 0, LEN = 0, RAD = 0, TUBE = 0;
   var stageTop = 0, stageLeft = 0;
 
@@ -630,7 +630,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   function geometry(){
     narrow = window.innerWidth < 900;
     LEN = SH*1.0;
-    RAD = Math.min(SW*0.30, narrow ? 72 : 100);
+    RAD = Math.min(SW*0.26, narrow ? 66 : 88);
     TUBE = narrow ? 4.8 : 6.2;
   }
   function pointAt(t, f, off){
