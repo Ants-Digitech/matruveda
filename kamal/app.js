@@ -522,3 +522,158 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   document.addEventListener("keydown", function(e){ if (e.key === "Escape" && wrap.classList.contains("open")) open(false); });
   mark();
 })();
+
+/* ---------- science section: petals fall, then build a helix whose rungs carry the rows ---------- */
+(function(){
+  var sec = document.querySelector("[data-sci]"); if (!sec) return;
+  var cv = sec.querySelector("[data-scicanvas]"), stage = sec.querySelector("[data-scistage]");
+  if (!cv || !stage) return;
+  var ctx = cv.getContext("2d"), W = 0, H = 0, dpr = 1, petals = [], rungs = [], raf = 0, prog = 0, running = false;
+  var TURNS = 2.2, AMP = 0, CX = 0, TOP = 0, HH = 0, WIDE = true;
+  var COLORS = ["rgba(224,122,31,.86)","rgba(242,162,76,.78)","rgba(201,162,74,.7)","rgba(184,92,18,.74)"];
+
+  function rnd(a,b){ return a + Math.random()*(b-a); }
+  function strandX(t, side){ return CX + Math.sin(t*TURNS*Math.PI*2 + (side ? Math.PI : 0))*AMP; }
+  function depth(t, side){ return 0.6 + 0.4*(0.5 + 0.5*Math.cos(t*TURNS*Math.PI*2 + (side ? Math.PI : 0))); }
+
+  function make(i){
+    return { x: rnd(0,W), y: rnd(-H*0.6, H), r: rnd(6,11), vy: rnd(.35,.95), sway: rnd(14,40),
+             ph: rnd(0,Math.PI*2), a: rnd(0,Math.PI*2), spin: rnd(-.015,.015),
+             c: COLORS[i % COLORS.length], t: 0, side: i % 2, anchor: false };
+  }
+
+  /* the five rows are the five rungs: read their offsets once, not every frame */
+  function measure(){
+    var cr = cv.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+    CX = sr.left - cr.left + sr.width/2;
+    TOP = sr.top - cr.top; HH = sr.height;
+    AMP = Math.min(sr.width*0.46, 150);
+    rungs.length = 0;
+    var rows = sec.querySelectorAll(".scicol.left li");
+    WIDE = W >= 900;
+    if (WIDE){
+      /* each rung sits level with its pair of cards, so the helix reads as the diagram it is */
+      for (var i=0;i<rows.length;i++){
+        var rr = rows[i].getBoundingClientRect();
+        var y = rr.top - cr.top + rr.height/2;
+        rungs.push({ y: y, t: HH ? Math.max(0, Math.min(1, (y - TOP)/HH)) : 0 });
+      }
+    } else {
+      /* narrow: the cards stack below the helix, so space the rungs evenly inside it instead */
+      var n = Math.max(1, rows.length);
+      for (var j=0;j<n;j++){ var t2 = (j + 0.5)/n; rungs.push({ y: TOP + t2*HH, t: t2 }); }
+    }
+    /* two petals are pinned to each rung end, the rest fill the backbone */
+    var need = rungs.length*2;
+    var n = W < 900 ? need + 26 : Math.max(need + 18, Math.min(86, Math.round(W/15)));
+    while (petals.length < n) petals.push(make(petals.length));
+    petals.length = n;
+    for (var k=0;k<petals.length;k++){
+      var p = petals[k];
+      if (k < need){ var ri = k >> 1; p.anchor = true; p.t = rungs[ri].t; p.side = k & 1; p.rung = ri; p.r = 11; }
+      else { p.anchor = false; p.rung = -1; p.t = (k - need + 0.5)/(petals.length - need); p.side = k & 1; }
+    }
+  }
+
+  function resize(){
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    var r = cv.getBoundingClientRect();
+    W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
+    cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    measure();
+  }
+
+  function petal(x, y, r, a, c, alpha){
+    ctx.save(); ctx.translate(x,y); ctx.rotate(a); ctx.globalAlpha = alpha; ctx.fillStyle = c;
+    ctx.beginPath(); ctx.moveTo(0,-r);
+    ctx.bezierCurveTo(r*.92,-r*.52, r*.78, r*.52, 0, r);
+    ctx.bezierCurveTo(-r*.78, r*.52, -r*.92,-r*.52, 0,-r);
+    ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+
+  function backbone(){
+    if (prog < .3) return;
+    var a = (prog-.3)/.7;
+    ctx.save(); ctx.lineWidth = 1.6;
+    for (var side=0; side<2; side++){
+      ctx.globalAlpha = a*0.38; ctx.strokeStyle = side ? "rgba(90,58,34,.65)" : "rgba(184,92,18,.65)";
+      ctx.beginPath();
+      for (var i=0;i<=60;i++){ var t = i/60, x = strandX(t, side), y = TOP + t*HH;
+        i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); }
+      ctx.stroke();
+    }
+    /* each rung joins a pair and runs out towards its two cards */
+    ctx.globalAlpha = a*0.55; ctx.strokeStyle = "rgba(90,58,34,.6)"; ctx.lineWidth = 1.3;
+    for (var k=0;k<rungs.length;k++){
+      var rg = rungs[k], x1 = strandX(rg.t,0), x2 = strandX(rg.t,1);
+      ctx.beginPath(); ctx.moveTo(Math.min(x1,x2), rg.y); ctx.lineTo(Math.max(x1,x2), rg.y); ctx.stroke();
+      if (WIDE){
+        ctx.save(); ctx.globalAlpha = a*0.32; ctx.setLineDash([3,5]);
+        ctx.beginPath(); ctx.moveTo(Math.min(x1,x2), rg.y); ctx.lineTo(0, rg.y);
+        ctx.moveTo(Math.max(x1,x2), rg.y); ctx.lineTo(W, rg.y); ctx.stroke();
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+  }
+
+  function progress(){
+    var r = sec.getBoundingClientRect(), vh = window.innerHeight || 800;
+    if (r.bottom < 0 || r.top > vh) return 0;
+    return Math.max(0, Math.min(1, (vh - r.top) / (vh*0.72)));
+  }
+
+  function place(){
+    /* the section moves under the scroll, so re-anchor to it without touching the row rects */
+    var cr = cv.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+    var dy = (sr.top - cr.top) - TOP;
+    if (Math.abs(dy) > 0.5){ TOP = sr.top - cr.top; for (var i=0;i<rungs.length;i++) rungs[i].y += dy; }
+  }
+
+  function step(){
+    raf = 0; if (!running) return;
+    prog = progress();
+    if (prog > 0) place();
+    ctx.clearRect(0,0,W,H);
+    backbone();
+    for (var i=0;i<petals.length;i++){
+      var p = petals[i];
+      var ty = p.anchor ? rungs[p.rung].y : TOP + p.t*HH;
+      var tx = strandX(p.t, p.side);
+      var ta = p.t*TURNS*Math.PI*2*0.35;
+      if (prog <= 0.02){
+        p.y += p.vy; p.ph += .01; p.a += p.spin; p.x += Math.cos(p.ph)*.3;
+        if (p.y > H+30){ p.y = -20; p.x = rnd(0,W); }
+      } else {
+        var k = 0.05 + 0.22*prog;
+        p.x += (tx - p.x)*k; p.y += (ty - p.y)*k; p.a += (ta - p.a)*k*0.5; p.ph += .006;
+        if (prog < 1){ p.x += Math.cos(p.ph)*(1-prog)*0.6; p.y += p.vy*(1-prog)*0.7; }
+      }
+      var d = depth(p.t, p.side), sc = 1 + (d - 1)*prog;
+      petal(p.x, p.y, p.r*sc, p.a, p.c, (p.anchor ? 0.72 : 0.45) + 0.28*prog*d);
+    }
+    raf = requestAnimationFrame(step);
+  }
+
+  function start(){ if (running) return; running = true; if (!raf) raf = requestAnimationFrame(step); }
+  function stop(){ running = false; if (raf){ cancelAnimationFrame(raf); raf = 0; } }
+
+  var reducedQ = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+  resize();
+  if (reducedQ){
+    prog = 1; ctx.clearRect(0,0,W,H); backbone();
+    for (var j=0;j<petals.length;j++){ var q = petals[j];
+      q.x = strandX(q.t, q.side); q.y = q.anchor ? rungs[q.rung].y : TOP + q.t*HH;
+      petal(q.x, q.y, q.r*depth(q.t,q.side), q.t*2, q.c, .9); }
+    return;
+  }
+  if ("IntersectionObserver" in window){
+    new IntersectionObserver(function(es){ es.forEach(function(e){ e.isIntersecting ? start() : stop(); }); },
+      { rootMargin: "250px 0px" }).observe(sec);
+  } else start();
+  var rt = 0;
+  window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(resize, 160); }, { passive: true });
+  document.addEventListener("visibilitychange", function(){ document.hidden ? stop() : start(); });
+})();
+
