@@ -536,8 +536,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   var phase = 0, SPIN = 0.0019, TURNS = 2.6, FOCAL = 820;
   var AX = 0, AY = 0, LEN = 0, RAD = 0, CA = 0, SA = 0;
   var stageTop = 0, stageLeft = 0;
-  var STEPS = sec.querySelectorAll(".scicol.left li").length || 5;
-  var active = 0, lit = 0;                      /* lit eases towards active so the glow travels */
+  var STEPS = 5;
 
   function rnd(a,b){ return a + Math.random()*(b-a); }
 
@@ -669,7 +668,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
 
   function drawHelix(){
     hctx.clearRect(0,0,SW,SH);
-    var n = 0, band = 1/STEPS;
+    var n = 0;
     for (var s=0;s<beads.length;s++){
       var bd = beads[s]; if (!bd.filled) continue;
       var p = pointAt(bd.t, bd.f, bd.off);
@@ -677,9 +676,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
       var e = Math.min(bd.t, 1 - bd.t)/0.12;
       rec.fade = e >= 1 ? 1 : e*e*(3 - 2*e);
       /* the pair you are reading lights up, and so does the stretch of strand around it */
-      var d = Math.abs(bd.t - (lit + 0.5)*band);
-      var near = Math.max(0, 1 - d/(band*0.72));
-      rec.glow = bd.rung >= 0 ? Math.max(near, 1 - Math.abs(bd.rung - lit)) : near*0.75;
+      rec.glow = bd.rung >= 0 ? 0.5 : 0;        /* the step rungs stay a little brighter */
       rec.x = p.x; rec.y = p.y; rec.k = p.k; rec.z = p.z; rec.r = bd.r; rec.tone = bd.tone; rec.st = !!bd.stray;
       n++;
     }
@@ -726,7 +723,6 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   function step(){
     raf = 0; if (!running) return;
     phase += SPIN;
-    lit += (active - lit)*0.08;
     track(); if ((++tick & 31) === 0) measure();
     var onScreen = stageTop < H + 60 && stageTop + SH > -60;
     var past = (stageTop + SH) < 0;
@@ -778,43 +774,13 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   function start(){ if (running) return; running = true; if (!raf) raf = requestAnimationFrame(step); }
   function stop(){ running = false; if (raf){ cancelAnimationFrame(raf); raf = 0; } }
 
-  /* ---- which pair is being read ---- */
-  function wireSteps(){
-    var rows = [];
-    for (var i=0;i<STEPS;i++){
-      rows.push({
-        l: sec.querySelector('.scicol.left li[data-step="' + i + '"]'),
-        r: sec.querySelector('.scicol.right li[data-step="' + i + '"]')
-      });
-    }
-    function setActive(i){
-      if (i === active) return;
-      active = i;
-      for (var k=0;k<rows.length;k++){
-        var on = k === i;
-        if (rows[k].l) rows[k].l.classList.toggle("on", on);
-        if (rows[k].r) rows[k].r.classList.toggle("on", on);
-      }
-    }
-    if (!("IntersectionObserver" in window)){ sec.classList.add("sci-static"); return; }
-    var io = new IntersectionObserver(function(es){
-      var best = null;
-      es.forEach(function(e){ if (e.isIntersecting) best = e; });
-      if (best){ var n = +best.target.getAttribute("data-step"); if (!isNaN(n)) setActive(n); }
-    }, { rootMargin: "-42% 0px -42% 0px", threshold: 0 });
-    for (var j=0;j<rows.length;j++) if (rows[j].l) io.observe(rows[j].l);
-    setActive(0);
-  }
-
   var reducedQ = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches;
   resize();
   if (reducedQ){
-    sec.classList.add("sci-static");
     for (var z=0;z<beads.length;z++) beads[z].filled = true;
-    lit = 2; drawHelix();
+    drawHelix();
     return;
   }
-  wireSteps();
   var rt = 0;
   window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(resize, 160); }, { passive: true });
   document.addEventListener("visibilitychange", function(){ document.hidden ? stop() : start(); });

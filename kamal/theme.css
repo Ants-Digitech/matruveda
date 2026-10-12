@@ -1053,46 +1053,39 @@ small{opacity:1}
 /* ---------- page-wide petal fall and the science section ---------- */
 .petalfall{position:fixed;inset:0;pointer-events:none;z-index:6}
 
-/* no overflow:hidden here: it would break the sticky stage below */
+/* no overflow:hidden here: an overflow ancestor silently breaks position:sticky */
 .sec.sci{position:relative;background:
-  radial-gradient(1300px 700px at 50% 42%, rgba(224,122,31,.09), transparent 72%), var(--bg2)}
-.sec.sci .hd{text-align:center;max-width:740px;margin:0 auto}
+  radial-gradient(1300px 700px at 62% 44%, rgba(224,122,31,.09), transparent 72%), var(--bg2)}
+.sec.sci .hd{max-width:720px}
 
-.scigrid{display:grid;grid-template-columns:clamp(190px,21vw,310px) minmax(0,1fr) clamp(190px,21vw,310px);
-  gap:clamp(12px,2vw,34px);align-items:start}
+.scisplit{display:grid;grid-template-columns:minmax(0,1fr) clamp(300px,38vw,540px);
+  gap:clamp(18px,3vw,56px);align-items:start;margin-top:clamp(22px,3vw,44px)}
 
-/* the strand stays in view while the pairs travel past it */
-.scistage{position:sticky;top:112px;height:clamp(320px,58vh,600px)}
+/* the strand keeps itself in view while the list is read. Nothing dims, nothing waits on scroll. */
+.scistage{position:sticky;top:116px;height:clamp(320px,62vh,620px)}
 .scistage .scihelix{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 
-.scicol{list-style:none;margin:0;padding:clamp(50px,17vh,180px) 0;display:grid;
-  gap:clamp(110px,33vh,310px);align-content:start}
-.scicol li{background:var(--panel);border:1px solid var(--line);border-radius:14px;
-  padding:clamp(13px,1.6vw,18px) clamp(15px,1.8vw,21px);
-  box-shadow:0 14px 32px -26px rgba(62,38,21,.55);
-  opacity:.45;transform:translateY(8px);transition:opacity .5s ease,transform .5s ease}
-.scicol li.on{opacity:1;transform:none}
-.scicol li b{display:block;font-weight:600;font-size:1rem;line-height:1.35;color:var(--struct2)}
-.scicol li span{display:block;margin-top:5px;font-size:.84rem;line-height:1.5;color:var(--muted)}
-.scicol.left{text-align:right}
-.scicol.left li b{color:var(--accT)}
-.scicol.right li b{color:var(--live)}
-.scinote{margin:clamp(20px,3vw,40px) 0 0;text-align:center;font-size:.8rem;color:var(--muted);
+.scilist{list-style:none;margin:0;padding:0;display:grid;gap:clamp(12px,1.6vw,20px)}
+.scilist li{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  box-shadow:0 14px 32px -26px rgba(62,38,21,.5)}
+.scilist li>div{padding:clamp(13px,1.5vw,18px) clamp(15px,1.7vw,21px)}
+.sciev{border-right:1px solid var(--line)}
+.scilist b{display:block;font-weight:600;font-size:.98rem;line-height:1.35}
+.sciev b{color:var(--accT)}
+.scido b{color:var(--live)}
+.scilist span{display:block;margin-top:5px;font-size:.83rem;line-height:1.5;color:var(--muted)}
+.scilist li::before{content:"";grid-column:1 / -1;height:2px;
+  background:linear-gradient(90deg,var(--acc),var(--gold) 55%,transparent)}
+.scinote{margin:clamp(20px,3vw,38px) 0 0;font-size:.8rem;color:var(--muted);
   border-top:1px dashed var(--line2);padding-top:14px}
 
-/* no javascript, or motion turned down: every pair simply reads */
-.no-js .scicol li,
-.sci-static .scicol li{opacity:1;transform:none}
-@media (prefers-reduced-motion:reduce){.scicol li{opacity:1;transform:none;transition:none}}
-
-/* phones: the strand pins as a band at the top and the pairs run beneath it */
-@media (max-width:900px){
-  .scigrid{grid-template-columns:1fr;gap:0}
-  .scistage{order:-1;top:84px;height:clamp(190px,30vh,260px);z-index:2;
-    background:linear-gradient(var(--bg2) 72%, rgba(246,237,224,0));
-    margin:0 calc(var(--gut,16px)*-1);padding:0 var(--gut,16px)}
-  .scicol{padding:clamp(26px,7vh,60px) 0;gap:clamp(70px,24vh,200px)}
-  .scicol.left{text-align:left}
-  .scicol.right{padding-top:0}
+@media (max-width:980px){
+  .scisplit{grid-template-columns:1fr}
+  .scistage{order:-1;position:static;height:clamp(220px,38vw,330px)}
+}
+@media (max-width:620px){
+  .scilist li{grid-template-columns:1fr}
+  .sciev{border-right:0;border-bottom:1px solid var(--line)}
 }
 
