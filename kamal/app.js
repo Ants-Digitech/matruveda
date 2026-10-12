@@ -523,7 +523,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   mark();
 })();
 
-/* ---------- petals fall the length of the page and build a sweeping helix ---------- */
+/* ---------- petals fall the length of the page and build a beaded helix ---------- */
 (function(){
   var sky = document.querySelector("[data-petalfall]");
   var sec = document.querySelector("[data-sci]");
@@ -533,68 +533,67 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   var sctx = sky.getContext("2d"), hctx = hx.getContext("2d");
   var W = 0, H = 0, SW = 0, SH = 0, dpr = 1, raf = 0, running = false, narrow = false;
   var fall = [], beads = [], sprites = [], buf = [], tick = 0;
-  var phase = 0, SPIN = 0.0021, TURNS = 2.8, FOCAL = 900;
-  var AX = 0, AY = 0, LEN = 0, RAD = 0, CA = 0, SA = 0;   /* axis anchor, length, amplitude, lean */
+  var phase = 0, SPIN = 0.0019, TURNS = 2.6, FOCAL = 820;
+  var AX = 0, AY = 0, LEN = 0, RAD = 0, CA = 0, SA = 0;
   var docTop = 0, docLeft = 0, secTop = 0, secLeft = 0;
 
   function rnd(a,b){ return a + Math.random()*(b-a); }
 
-  /* ---- spheres, pre-rendered once per size bucket, in the active palette ---- */
-  var BUCKETS = 16, RMIN = 2, RMAX = 19;
-  function hex(v, fallback){
+  /* ---- colour, taken from whichever palette is active ---- */
+  function hex(v, fb){
     v = (v || "").trim();
     var m = /^#?([0-9a-f]{6})$/i.exec(v);
     if (m){ var n = parseInt(m[1],16); return [n>>16 & 255, n>>8 & 255, n & 255]; }
     m = /rgba?\(([^)]+)\)/.exec(v);
     if (m){ var a = m[1].split(","); return [+a[0]|0, +a[1]|0, +a[2]|0]; }
-    return fallback;
+    return fb;
   }
-  function mix(a, b, t){ return [Math.round(a[0]+(b[0]-a[0])*t), Math.round(a[1]+(b[1]-a[1])*t), Math.round(a[2]+(b[2]-a[2])*t)]; }
-  function rgba(c, a){ return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
-  var ACC = [224,122,31], ACCD = [184,92,18];
+  function mix(a,b,t){ return [Math.round(a[0]+(b[0]-a[0])*t), Math.round(a[1]+(b[1]-a[1])*t), Math.round(a[2]+(b[2]-a[2])*t)]; }
+  function rgba(c,a){ return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+  var WHITE = [255,255,255], DARK = [48,20,4];
+  var TONES = [], PCOL = [];
   function readPalette(){
     var cs = getComputedStyle(document.documentElement);
-    ACC  = hex(cs.getPropertyValue("--acc"),  [224,122,31]);
-    ACCD = hex(cs.getPropertyValue("--accD"), [184,92,18]);
+    var ACC  = hex(cs.getPropertyValue("--acc"),  [224,122,31]);
+    var ACCD = hex(cs.getPropertyValue("--accD"), [184,92,18]);
+    var GOLD = hex(cs.getPropertyValue("--gold"), [201,162,74]);
+    /* one family, several tints, the way real beads catch light differently */
+    TONES = [ACC, mix(ACC,WHITE,.26), GOLD, ACCD, mix(ACC,DARK,.16), mix(GOLD,DARK,.12), mix(ACCD,WHITE,.14)];
+    PCOL = [rgba(ACC,.55), rgba(mix(ACC,WHITE,.3),.5), rgba(mix(ACC,GOLD,.6),.45), rgba(ACCD,.5)];
   }
+
+  /* ---- tiny spheres: one sprite per tone per size bucket, built once ---- */
+  var BUCKETS = 9, RMIN = 1.2, RMAX = 6.0;
   function buildSprites(){
     readPalette();
     sprites.length = 0;
-    for (var i=0;i<BUCKETS;i++){
-      var r = RMIN*Math.pow(RMAX/RMIN, i/(BUCKETS-1));
-      var pad = Math.ceil(r*1.5), s = pad*2;
-      var c = document.createElement("canvas");
-      c.width = Math.ceil(s*dpr); c.height = Math.ceil(s*dpr);
-      var g = c.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
-      var WHITE = [255,255,255], BLACK = [40,16,2];
-      var halo = g.createRadialGradient(pad, pad, r*0.8, pad, pad, r*1.45);
-      halo.addColorStop(0, rgba(mix(ACC, WHITE, .06), .42));
-      halo.addColorStop(1, rgba(ACC, 0));
-      g.fillStyle = halo; g.beginPath(); g.arc(pad, pad, r*1.45, 0, 6.2832); g.fill();
-      var body = g.createRadialGradient(pad - r*0.40, pad - r*0.44, r*0.06, pad, pad, r);
-      body.addColorStop(0,    rgba(mix(ACC, WHITE, .92), 1));
-      body.addColorStop(0.18, rgba(mix(ACC, WHITE, .56), 1));
-      body.addColorStop(0.50, rgba(ACC, 1));
-      body.addColorStop(0.84, rgba(ACCD, 1));
-      body.addColorStop(1,    rgba(mix(ACCD, BLACK, .45), 1));
-      g.fillStyle = body; g.beginPath(); g.arc(pad, pad, r, 0, 6.2832); g.fill();
-      g.globalAlpha = .55; g.fillStyle = "#fff";
-      g.beginPath(); g.ellipse(pad - r*0.36, pad - r*0.42, r*0.27, r*0.17, -0.6, 0, 6.2832); g.fill();
-      sprites.push({ c: c, pad: pad, r: r });
+    for (var c=0;c<TONES.length;c++){
+      var row = [];
+      for (var i=0;i<BUCKETS;i++){
+        var r = RMIN*Math.pow(RMAX/RMIN, i/(BUCKETS-1));
+        var pad = Math.ceil(r*1.45) + 1, s = pad*2;
+        var cv = document.createElement("canvas");
+        cv.width = Math.ceil(s*dpr); cv.height = Math.ceil(s*dpr);
+        var g = cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
+        var body = g.createRadialGradient(pad - r*0.38, pad - r*0.42, r*0.05, pad, pad, r);
+        body.addColorStop(0,    rgba(mix(TONES[c],WHITE,.85), 1));
+        body.addColorStop(0.3,  rgba(mix(TONES[c],WHITE,.35), 1));
+        body.addColorStop(0.72, rgba(TONES[c], 1));
+        body.addColorStop(1,    rgba(mix(TONES[c],DARK,.42), 1));
+        g.fillStyle = body; g.beginPath(); g.arc(pad, pad, r, 0, 6.2832); g.fill();
+        row.push({ c: cv, pad: pad, r: r });
+      }
+      sprites.push(row);
     }
   }
-  function sphere(ctx, x, y, r, alpha){
+  function sphere(ctx, tone, x, y, r, alpha){
     var i = Math.round(Math.log(Math.max(RMIN, Math.min(RMAX, r))/RMIN)/Math.log(RMAX/RMIN)*(BUCKETS-1));
-    var sp = sprites[i], k = r/sp.r, d = sp.pad*2*k;
+    var sp = sprites[tone][i], k = r/sp.r, d = sp.pad*2*k;
     ctx.globalAlpha = alpha;
     ctx.drawImage(sp.c, x - sp.pad*k, y - sp.pad*k, d, d);
   }
 
   /* ---- falling petals ---- */
-  var PCOL = [];
-  function buildPetalColours(){
-    PCOL = [rgba(ACC,.55), rgba(mix(ACC,[255,255,255],.3),.5), rgba(mix(ACC,[201,162,74],.6),.45), rgba(ACCD,.5)];
-  }
   function petal(p){
     sctx.save(); sctx.translate(p.x, p.y); sctx.rotate(p.a);
     sctx.globalAlpha = p.al; sctx.fillStyle = p.c;
@@ -611,48 +610,52 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
              seat: -1, grab: 0 };
   }
 
-  /* ---- the helix: few wide turns, spheres clustered unevenly along two strands ---- */
+  /* ---- geometry: two beaded backbones and rungs that are themselves bead chains ---- */
   function geometry(){
     narrow = SW < 900;
-    var lean = narrow ? -1.12 : -1.25;            /* sweeps bottom-left to top-right */
-    CA = Math.cos(lean); SA = Math.sin(lean);
-    LEN = narrow ? Math.min(SW*0.50, 252) : Math.min(SW*0.445, 528);
-    RAD = narrow ? Math.min(SW*0.145, 62) : Math.min(SW*0.090, 109);
+    var leanA = narrow ? -1.12 : -1.25;
+    CA = Math.cos(leanA); SA = Math.sin(leanA);
+    LEN = narrow ? Math.min(SW*0.54, 272) : Math.min(SW*0.48, 570);
+    RAD = narrow ? Math.min(SW*0.155, 66) : Math.min(SW*0.098, 118);
     AX = SW*0.5; AY = SH*0.5;
   }
-  function pointAt(t, side, off){
-    var ang = t*TURNS*6.2832 + phase + (side ? Math.PI : 0);
-    var rr = RAD + (off ? off.r : 0);
-    var z = Math.cos(ang)*rr + (off ? off.z : 0);
-    var k = FOCAL/(FOCAL + z);
-    /* local frame: u runs along the axis, v across it, then the whole thing leans */
+  /* f = 0 on strand A, 1 on strand B; a backbone bead uses f 0 or 1 */
+  function pointAt(t, f, off){
+    var ang = t*TURNS*6.2832 + phase;
+    var sx = Math.sin(ang)*RAD, sz = Math.cos(ang)*RAD;
+    var x3 = sx + (-2*sx)*f, z3 = sz + (-2*sz)*f;
+    if (off){ x3 += off.x; z3 += off.z; }
+    var k = FOCAL/(FOCAL + z3);
     var u = (t - 0.5)*LEN + (off ? off.u : 0);
-    var v = Math.sin(ang)*rr*k + (off ? off.v : 0);
-    return { x: AX + v*CA - u*SA, y: AY + v*SA + u*CA, k: k, z: z };
+    var v = x3*k;
+    return { x: AX + v*CA - u*SA, y: AY + v*SA + u*CA, k: k, z: z3 };
   }
 
   function buildBeads(){
     beads.length = 0;
-    var clusters = narrow ? 118 : 196;
-    for (var c=0;c<clusters;c++){
-      var t = c/(clusters-1), side = c & 1;
-      var members = 1 + ((Math.random()*Math.random()*7)|0);      /* mostly small clumps, a few fat */
-      for (var m=0;m<members;m++){
-        var big = Math.random() < .17;
-        beads.push({
-          t: Math.max(0, Math.min(1, t + rnd(-0.008, 0.008))), side: side,
-          r: big ? rnd(10, 18) : rnd(3.4, 9),
-          off: { u: rnd(-14, 14), v: rnd(-13, 13), r: rnd(-10, 10), z: rnd(-16, 16) },
-          filled: Math.random() < .9, claimed: false, life: rnd(0, 26)
-        });
+    var perStrand = narrow ? 420 : 860;
+    for (var side=0; side<2; side++){
+      for (var i=0;i<perStrand;i++){
+        beads.push({ t: i/(perStrand-1), f: side, r: rnd(1.9, 3.9),
+                     off: { x: rnd(-3.5,3.5), z: rnd(-3.5,3.5), u: rnd(-2.6,2.6) },
+                     tone: (Math.random()*7)|0, filled: Math.random() < .93, claimed: false, life: rnd(0,26) });
       }
     }
-    /* loose spheres drifting around the structure, as in the reference */
-    var strays = narrow ? 20 : 38;
+    var rungs = narrow ? 18 : 30, per = narrow ? 16 : 24;
+    for (var g2=0; g2<rungs; g2++){
+      var t = (g2 + 0.5)/rungs;
+      for (var j=0;j<per;j++){
+        var f = j/(per-1);
+        beads.push({ t: t, f: f, r: rnd(1.7, 3.2),
+                     off: { x: rnd(-2,2), z: rnd(-2,2), u: rnd(-2,2) },
+                     tone: (Math.random()*7)|0, filled: Math.random() < .93, claimed: false, life: rnd(0,26) });
+      }
+    }
+    var strays = narrow ? 16 : 30;
     for (var s=0;s<strays;s++){
-      beads.push({ t: Math.random(), side: Math.random() < .5 ? 0 : 1, r: rnd(2.5, 7), stray: true,
-                   off: { u: rnd(-70, 70), v: rnd(-120, 120), r: rnd(-40, 40), z: rnd(-60, 60) },
-                   filled: true, claimed: false, life: 0 });
+      beads.push({ t: Math.random(), f: Math.random() < .5 ? 0 : 1, r: rnd(1.4,3), stray: true,
+                   off: { x: rnd(-90,90), z: rnd(-70,70), u: rnd(-60,60) },
+                   tone: (Math.random()*7)|0, filled: true, claimed: false, life: 0 });
     }
   }
 
@@ -660,48 +663,28 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     for (var i=0;i<beads.length;i++) if (!beads[i].filled && !beads[i].claimed && !beads[i].stray) return i;
     return -1;
   }
+  function byZ(m,n){ return m.z - n.z; }
 
   function drawHelix(){
     hctx.clearRect(0,0,SW,SH);
-    /* the two backbones, faint, drawn behind the spheres */
-    for (var side=0; side<2; side++){
-      hctx.beginPath();
-      for (var i=0;i<=120;i++){
-        var q = pointAt(i/120, side, null);
-        i ? hctx.lineTo(q.x,q.y) : hctx.moveTo(q.x,q.y);
-      }
-      hctx.globalAlpha = .16; hctx.lineWidth = 2.4; hctx.strokeStyle = rgba(ACCD, .8); hctx.stroke();
-    }
-    /* base pairs across the middle of the structure */
-    hctx.lineWidth = 2.2;
-    for (var b=0;b<=26;b++){
-      var t = b/26, a = pointAt(t, 0, null), c2 = pointAt(t, 1, null);
-      var kk = (a.k + c2.k)/2;
-      hctx.globalAlpha = Math.max(.05, (kk - .82)*.9);
-      hctx.strokeStyle = rgba(ACCD, .85);
-      hctx.beginPath(); hctx.moveTo(a.x,a.y); hctx.lineTo(c2.x,c2.y); hctx.stroke();
-    }
-    /* spheres, far to near */
     var n = 0;
     for (var s=0;s<beads.length;s++){
       var bd = beads[s]; if (!bd.filled) continue;
-      var p = pointAt(bd.t, bd.side, bd.off);
-      var rec = buf[n] || (buf[n] = { x:0,y:0,k:0,z:0,r:0,st:false });
-      rec.x = p.x; rec.y = p.y; rec.k = p.k; rec.z = p.z; rec.r = bd.r; rec.st = !!bd.stray;
+      var p = pointAt(bd.t, bd.f, bd.off);
+      var rec = buf[n] || (buf[n] = { x:0,y:0,k:0,z:0,r:0,tone:0,st:false });
+      rec.x = p.x; rec.y = p.y; rec.k = p.k; rec.z = p.z; rec.r = bd.r; rec.tone = bd.tone; rec.st = !!bd.stray;
       n++;
     }
     var view = buf.length === n ? buf : buf.slice(0, n);
     view.sort(byZ);
     for (var v=0;v<n;v++){
       var it = view[v];
-      var a2 = Math.max(.14, Math.min(1, (it.k - .72)*2.6));
-      sphere(hctx, it.x, it.y, it.r*it.k, it.st ? a2*.55 : a2);
+      var a = Math.max(.3, Math.min(1, (it.k - .7)*2.4));
+      sphere(hctx, it.tone, it.x, it.y, it.r*it.k, it.st ? a*.5 : a);
     }
     hctx.globalAlpha = 1;
   }
-  function byZ(m,n){ return m.z - n.z; }
 
-  /* ---- sizing ---- */
   function measure(){
     var sr = band.getBoundingClientRect();
     docTop = sr.top + (window.pageYOffset||0); docLeft = sr.left + (window.pageXOffset||0);
@@ -709,8 +692,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     hx.width = Math.round(SW*dpr); hx.height = Math.round(SH*dpr);
     hx.style.width = SW + "px"; hx.style.height = SH + "px";
     hctx.setTransform(dpr,0,0,dpr,0,0);
-    geometry();
-    track();
+    geometry(); track();
   }
   function track(){
     secTop = docTop - (window.pageYOffset||0);
@@ -722,7 +704,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     sky.width = Math.round(W*dpr); sky.height = Math.round(H*dpr);
     sky.style.width = W + "px"; sky.style.height = H + "px";
     sctx.setTransform(dpr,0,0,dpr,0,0);
-    buildSprites(); buildPetalColours();
+    buildSprites();
     var want = W < 760 ? 9 : 16;
     while (fall.length < want) fall.push(makeFall(false));
     fall.length = want;
@@ -743,7 +725,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
       if (p.seat >= 0){
         var bd = beads[p.seat];
         if (!onScreen){ bd.claimed = false; p.seat = -1; continue; }
-        var q = pointAt(bd.t, bd.side, bd.off);
+        var q = pointAt(bd.t, bd.f, bd.off);
         var tx = secLeft + q.x, ty = secTop + q.y;
         p.grab += .034;
         var e = p.grab < 1 ? p.grab*p.grab*(3-2*p.grab) : 1;
@@ -774,7 +756,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
         var bb = beads[k];
         if (!bb.filled || bb.stray) continue;
         bb.life += .016;
-        if (bb.life > 20 && Math.random() < .0004){ bb.filled = false; bb.life = 0; }
+        if (bb.life > 20 && Math.random() < .00012){ bb.filled = false; bb.life = 0; }
       }
       drawHelix();
     }
@@ -795,7 +777,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(resize, 160); }, { passive: true });
   document.addEventListener("visibilitychange", function(){ document.hidden ? stop() : start(); });
   if (window.MutationObserver){
-    new MutationObserver(function(){ buildSprites(); buildPetalColours();
+    new MutationObserver(function(){ buildSprites();
       for (var i=0;i<fall.length;i++) fall[i].c = PCOL[(Math.random()*PCOL.length)|0];
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-pal"] });
   }
