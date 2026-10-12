@@ -1072,7 +1072,7 @@ small{opacity:1}
 }
 .scibox .scihelix{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 
-.scicol{list-style:none;margin:0;padding:0;display:grid;align-content:space-between;
+.scicol{list-style:none;margin:0;padding:0;display:grid;align-content:center;
   gap:clamp(10px,1.6vw,18px)}
 .scicol li{background:var(--panel);border:1px solid var(--line);border-radius:14px;
   padding:clamp(12px,1.5vw,17px) clamp(14px,1.7vw,20px);

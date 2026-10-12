@@ -611,28 +611,29 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   function geometry(){
     narrow = window.innerWidth < 900;
     CA = 1; SA = 0;                      /* upright: the axis runs straight down the panel */
-    TURNS = narrow ? 2.6 : 3.2;
+    TURNS = 4;
     LEN = SH*0.90;
-    RAD = Math.min(SW*0.27, narrow ? 96 : 124);
+    RAD = Math.min(SW*0.26, narrow ? 86 : 118);
     AX = SW*0.5; AY = SH*0.5;
   }
   function pointAt(t, f, off){
     var ang = t*TURNS*6.2832 + phase;
-    var sx = Math.sin(ang)*RAD, sz = Math.cos(ang)*RAD;
-    var x3 = sx + (-2*sx)*f, z3 = sz + (-2*sz)*f;
-    if (off){ x3 += off.x; z3 += off.z; }
-    var k = FOCAL/(FOCAL + z3);
+    var xA = Math.sin(ang)*RAD, zA = Math.cos(ang);
+    /* f runs 0 on one strand to 1 on the other, so a rung is a straight line between them */
+    var x = xA + (-2*xA)*f, z = zA + (-2*zA)*f;
+    if (off){ x += off.x; }
     var u = (t - 0.5)*LEN + (off ? off.u : 0);
-    return { x: AX + x3*k*CA - u*SA, y: AY + x3*k*SA + u*CA, k: k, z: z3 };
+    /* depth is used only to size and sort the beads, never to bend the shape */
+    return { x: AX + x, y: AY + u, k: 0.74 + 0.26*(z*0.5 + 0.5), z: z };
   }
 
   function buildBeads(){
     beads.length = 0;
-    var perStrand = narrow ? 420 : 820;
+    var perStrand = narrow ? 430 : 860;
     for (var side=0; side<2; side++){
       for (var i=0;i<perStrand;i++){
-        beads.push({ t: i/(perStrand-1), f: side, r: rnd(1.9, 3.9), rung: -1,
-                     off: { x: rnd(-3.5,3.5), z: rnd(-3.5,3.5), u: rnd(-2.6,2.6) },
+        beads.push({ t: i/(perStrand-1), f: side, r: rnd(2.3, 4.7), rung: -1,
+                     off: { x: rnd(-1.6,1.6), z: 0, u: rnd(-1.6,1.6) },
                      tone: (Math.random()*7)|0, filled: Math.random() < .93, claimed: false, life: rnd(0,26) });
       }
     }
@@ -646,8 +647,8 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
         var count = isStep ? per : Math.round(per*0.55);
         for (var j=0;j<count;j++){
           var f = j/(count-1);
-          beads.push({ t: t, f: f, r: isStep ? rnd(1.8,3.3) : rnd(1.3,2.3), rung: isStep ? s2 : -1,
-                       off: { x: rnd(-2,2), z: rnd(-2,2), u: rnd(-2,2) },
+          beads.push({ t: t, f: f, r: isStep ? rnd(2.1,3.9) : rnd(1.6,2.8), rung: isStep ? s2 : -1,
+                       off: { x: rnd(-1.2,1.2), z: 0, u: rnd(-1.2,1.2) },
                        tone: (Math.random()*7)|0, filled: Math.random() < .93, claimed: false, life: rnd(0,26) });
         }
       }
@@ -655,7 +656,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     var strays = narrow ? 14 : 26;
     for (var s=0;s<strays;s++){
       beads.push({ t: Math.random(), f: Math.random() < .5 ? 0 : 1, r: rnd(1.4,3), stray: true, rung: -1,
-                   off: { x: rnd(-80,80), z: rnd(-60,60), u: rnd(-50,50) },
+                   off: { x: rnd(-90,90), z: 0, u: rnd(-60,60) },
                    tone: (Math.random()*7)|0, filled: true, claimed: false, life: 0 });
     }
   }
@@ -684,7 +685,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     view.sort(byZ);
     for (var v=0;v<n;v++){
       var it = view[v];
-      var a = Math.max(.26, Math.min(1, (it.k - .7)*2.4)) * it.fade;
+      var a = Math.max(.42, Math.min(1, (it.k - .62)*2.6)) * it.fade;
       a = Math.min(1, a*(0.72 + 0.55*it.glow));
       sphere(hctx, it.tone, it.x, it.y, it.r*it.k*(1 + 0.3*it.glow), it.st ? a*.5 : a);
     }
