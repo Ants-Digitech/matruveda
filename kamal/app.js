@@ -611,9 +611,9 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   function geometry(){
     narrow = window.innerWidth < 900;
     CA = 1; SA = 0;                      /* upright: the axis runs straight down the panel */
-    TURNS = narrow ? 2.6 : 3.0;
+    TURNS = narrow ? 2.6 : 3.2;
     LEN = SH*0.90;
-    RAD = Math.min(SW*0.27, narrow ? 92 : 88);
+    RAD = Math.min(SW*0.27, narrow ? 96 : 124);
     AX = SW*0.5; AY = SH*0.5;
   }
   function pointAt(t, f, off){
