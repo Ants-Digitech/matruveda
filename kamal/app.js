@@ -523,23 +523,25 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   mark();
 })();
 
-/* ---------- petals fall the length of the page and build a beaded helix ---------- */
+/* ---------- petals fall the length of the page; the helix pins and lights the pair you read ---------- */
 (function(){
   var sky = document.querySelector("[data-petalfall]");
   var sec = document.querySelector("[data-sci]");
   var hx  = sec && sec.querySelector("[data-scihelix]");
-  var grid = sec && sec.querySelector("[data-scigrid]");
-  if (!sky || !sec || !hx || !grid) return;
+  var stage = sec && sec.querySelector("[data-scistage]");
+  if (!sky || !sec || !hx || !stage) return;
   var sctx = sky.getContext("2d"), hctx = hx.getContext("2d");
   var W = 0, H = 0, SW = 0, SH = 0, dpr = 1, raf = 0, running = false, narrow = false;
   var fall = [], beads = [], sprites = [], buf = [], tick = 0;
   var phase = 0, SPIN = 0.0019, TURNS = 2.6, FOCAL = 820;
-  var AX = 0, AY = 0, LEN = 0, RAD = 0, CA = 0, SA = 0, GY = 0;
-  var docTop = 0, docLeft = 0, secTop = 0, secLeft = 0;
+  var AX = 0, AY = 0, LEN = 0, RAD = 0, CA = 0, SA = 0;
+  var stageTop = 0, stageLeft = 0;
+  var STEPS = sec.querySelectorAll(".scicol.left li").length || 5;
+  var active = 0, lit = 0;                      /* lit eases towards active so the glow travels */
 
   function rnd(a,b){ return a + Math.random()*(b-a); }
 
-  /* ---- colour, taken from whichever palette is active ---- */
+  /* ---- colour from the active palette ---- */
   function hex(v, fb){
     v = (v || "").trim();
     var m = /^#?([0-9a-f]{6})$/i.exec(v);
@@ -557,13 +559,11 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     var ACC  = hex(cs.getPropertyValue("--acc"),  [224,122,31]);
     var ACCD = hex(cs.getPropertyValue("--accD"), [184,92,18]);
     var GOLD = hex(cs.getPropertyValue("--gold"), [201,162,74]);
-    /* one family, several tints, the way real beads catch light differently */
     TONES = [ACC, mix(ACC,WHITE,.26), GOLD, ACCD, mix(ACC,DARK,.16), mix(GOLD,DARK,.12), mix(ACCD,WHITE,.14)];
     PCOL = [rgba(ACC,.55), rgba(mix(ACC,WHITE,.3),.5), rgba(mix(ACC,GOLD,.6),.45), rgba(ACCD,.5)];
   }
 
-  /* ---- tiny spheres: one sprite per tone per size bucket, built once ---- */
-  var BUCKETS = 9, RMIN = 1.2, RMAX = 6.0;
+  var BUCKETS = 9, RMIN = 1.2, RMAX = 6.4;
   function buildSprites(){
     readPalette();
     sprites.length = 0;
@@ -593,7 +593,6 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     ctx.drawImage(sp.c, x - sp.pad*k, y - sp.pad*k, d, d);
   }
 
-  /* ---- falling petals ---- */
   function petal(p){
     sctx.save(); sctx.translate(p.x, p.y); sctx.rotate(p.a);
     sctx.globalAlpha = p.al; sctx.fillStyle = p.c;
@@ -610,16 +609,14 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
              seat: -1, grab: 0 };
   }
 
-  /* ---- geometry: two beaded backbones and rungs that are themselves bead chains ---- */
   function geometry(){
-    narrow = SW < 900;
-    var leanA = narrow ? -1.10 : -1.17;
+    narrow = window.innerWidth < 900;
+    var leanA = narrow ? -1.08 : -1.16;
     CA = Math.cos(leanA); SA = Math.sin(leanA);
-    LEN = narrow ? Math.min(SW*0.62, 260) : Math.min(SW*0.54, 790);
-    RAD = narrow ? Math.min(SW*0.17, 60) : Math.min(SW*0.082, 122);
-    AX = SW*0.5; AY = GY;
+    LEN = narrow ? Math.min(SW*0.72, 300) : Math.min(SW*0.80, 640);
+    RAD = narrow ? Math.min(SW*0.17, 62) : Math.min(SW*0.135, 112);
+    AX = SW*0.5; AY = SH*0.5;
   }
-  /* f = 0 on strand A, 1 on strand B; a backbone bead uses f 0 or 1 */
   function pointAt(t, f, off){
     var ang = t*TURNS*6.2832 + phase;
     var sx = Math.sin(ang)*RAD, sz = Math.cos(ang)*RAD;
@@ -627,34 +624,39 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     if (off){ x3 += off.x; z3 += off.z; }
     var k = FOCAL/(FOCAL + z3);
     var u = (t - 0.5)*LEN + (off ? off.u : 0);
-    var v = x3*k;
-    return { x: AX + v*CA - u*SA, y: AY + v*SA + u*CA, k: k, z: z3 };
+    return { x: AX + x3*k*CA - u*SA, y: AY + x3*k*SA + u*CA, k: k, z: z3 };
   }
 
   function buildBeads(){
     beads.length = 0;
-    var perStrand = narrow ? 420 : 860;
+    var perStrand = narrow ? 420 : 820;
     for (var side=0; side<2; side++){
       for (var i=0;i<perStrand;i++){
-        beads.push({ t: i/(perStrand-1), f: side, r: rnd(1.9, 3.9),
+        beads.push({ t: i/(perStrand-1), f: side, r: rnd(1.9, 3.9), rung: -1,
                      off: { x: rnd(-3.5,3.5), z: rnd(-3.5,3.5), u: rnd(-2.6,2.6) },
                      tone: (Math.random()*7)|0, filled: Math.random() < .93, claimed: false, life: rnd(0,26) });
       }
     }
-    var rungs = narrow ? 18 : 30, per = narrow ? 16 : 24;
-    for (var g2=0; g2<rungs; g2++){
-      var t = (g2 + 0.5)/rungs;
-      for (var j=0;j<per;j++){
-        var f = j/(per-1);
-        beads.push({ t: t, f: f, r: rnd(1.7, 3.2),
-                     off: { x: rnd(-2,2), z: rnd(-2,2), u: rnd(-2,2) },
-                     tone: (Math.random()*7)|0, filled: Math.random() < .93, claimed: false, life: rnd(0,26) });
+    /* one rung per pair of statements, plus quieter rungs between them */
+    var per = narrow ? 15 : 22, between = 4;
+    for (var s2=0; s2<STEPS; s2++){
+      for (var b2=0; b2<=between; b2++){
+        var isStep = b2 === 0;
+        var t = (s2 + (b2/(between+1)) + 0.5/(between+1)) / STEPS;
+        if (t > 1) continue;
+        var count = isStep ? per : Math.round(per*0.55);
+        for (var j=0;j<count;j++){
+          var f = j/(count-1);
+          beads.push({ t: t, f: f, r: isStep ? rnd(1.8,3.3) : rnd(1.3,2.3), rung: isStep ? s2 : -1,
+                       off: { x: rnd(-2,2), z: rnd(-2,2), u: rnd(-2,2) },
+                       tone: (Math.random()*7)|0, filled: Math.random() < .93, claimed: false, life: rnd(0,26) });
+        }
       }
     }
-    var strays = narrow ? 16 : 30;
+    var strays = narrow ? 14 : 26;
     for (var s=0;s<strays;s++){
-      beads.push({ t: Math.random(), f: Math.random() < .5 ? 0 : 1, r: rnd(1.4,3), stray: true,
-                   off: { x: rnd(-90,90), z: rnd(-70,70), u: rnd(-60,60) },
+      beads.push({ t: Math.random(), f: Math.random() < .5 ? 0 : 1, r: rnd(1.4,3), stray: true, rung: -1,
+                   off: { x: rnd(-80,80), z: rnd(-60,60), u: rnd(-50,50) },
                    tone: (Math.random()*7)|0, filled: true, claimed: false, life: 0 });
     }
   }
@@ -667,19 +669,17 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
 
   function drawHelix(){
     hctx.clearRect(0,0,SW,SH);
-    var n = 0;
+    var n = 0, band = 1/STEPS;
     for (var s=0;s<beads.length;s++){
       var bd = beads[s]; if (!bd.filled) continue;
       var p = pointAt(bd.t, bd.f, bd.off);
-      var rec = buf[n] || (buf[n] = { x:0,y:0,k:0,z:0,r:0,tone:0,st:false,fade:1 });
-      var e = Math.min(bd.t, 1 - bd.t)/0.16;            /* die away at both ends of the strand */
-      var ef = e >= 1 ? 1 : e*e*(3 - 2*e);
-      var u = p.x/SW, hf;                                /* and dissolve where the columns begin */
-      if (u < 0.05 || u > 0.95) hf = 0;
-      else if (u < 0.29) hf = 0.18 + 0.82*(u - 0.05)/0.24;
-      else if (u > 0.71) hf = 0.18 + 0.82*(0.95 - u)/0.24;
-      else hf = 1;
-      rec.fade = ef*hf;
+      var rec = buf[n] || (buf[n] = { x:0,y:0,k:0,z:0,r:0,tone:0,st:false,fade:1,glow:0 });
+      var e = Math.min(bd.t, 1 - bd.t)/0.12;
+      rec.fade = e >= 1 ? 1 : e*e*(3 - 2*e);
+      /* the pair you are reading lights up, and so does the stretch of strand around it */
+      var d = Math.abs(bd.t - (lit + 0.5)*band);
+      var near = Math.max(0, 1 - d/(band*0.72));
+      rec.glow = bd.rung >= 0 ? Math.max(near, 1 - Math.abs(bd.rung - lit)) : near*0.75;
       rec.x = p.x; rec.y = p.y; rec.k = p.k; rec.z = p.z; rec.r = bd.r; rec.tone = bd.tone; rec.st = !!bd.stray;
       n++;
     }
@@ -687,26 +687,26 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     view.sort(byZ);
     for (var v=0;v<n;v++){
       var it = view[v];
-      var a = Math.max(.3, Math.min(1, (it.k - .7)*2.4)) * it.fade;
-      sphere(hctx, it.tone, it.x, it.y, it.r*it.k, it.st ? a*.5 : a);
+      var a = Math.max(.26, Math.min(1, (it.k - .7)*2.4)) * it.fade;
+      a = Math.min(1, a*(0.72 + 0.55*it.glow));
+      sphere(hctx, it.tone, it.x, it.y, it.r*it.k*(1 + 0.3*it.glow), it.st ? a*.5 : a);
     }
     hctx.globalAlpha = 1;
   }
 
   function measure(){
-    var sr = sec.getBoundingClientRect();
-    var gr = grid.getBoundingClientRect();
-    GY = gr.top - sr.top + gr.height/2;
-    docTop = sr.top + (window.pageYOffset||0); docLeft = sr.left + (window.pageXOffset||0);
+    var sr = hx.getBoundingClientRect();
     SW = Math.max(1, Math.round(sr.width)); SH = Math.max(1, Math.round(sr.height));
-    hx.width = Math.round(SW*dpr); hx.height = Math.round(SH*dpr);
-    hx.style.width = SW + "px"; hx.style.height = SH + "px";
-    hctx.setTransform(dpr,0,0,dpr,0,0);
-    geometry(); track();
+    if (hx.width !== Math.round(SW*dpr) || hx.height !== Math.round(SH*dpr)){
+      hx.width = Math.round(SW*dpr); hx.height = Math.round(SH*dpr);
+      hctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    stageTop = sr.top; stageLeft = sr.left;
+    geometry();
   }
   function track(){
-    secTop = docTop - (window.pageYOffset||0);
-    secLeft = docLeft - (window.pageXOffset||0);
+    var sr = hx.getBoundingClientRect();
+    stageTop = sr.top; stageLeft = sr.left;
   }
   function resize(){
     dpr = Math.min(window.innerWidth < 760 ? 1.4 : 1.75, window.devicePixelRatio || 1);
@@ -718,16 +718,18 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     var want = W < 760 ? 9 : 16;
     while (fall.length < want) fall.push(makeFall(false));
     fall.length = want;
+    var wasNarrow = narrow;
     measure();
-    if (!beads.length) buildBeads();
+    if (!beads.length || wasNarrow !== narrow) buildBeads();
   }
 
   function step(){
     raf = 0; if (!running) return;
     phase += SPIN;
-    track(); if ((++tick & 63) === 0) measure();
-    var onScreen = secTop < H + 80 && secTop + SH > -80;
-    var past = (secTop + SH) < 0;
+    lit += (active - lit)*0.08;
+    track(); if ((++tick & 31) === 0) measure();
+    var onScreen = stageTop < H + 60 && stageTop + SH > -60;
+    var past = (stageTop + SH) < 0;
 
     sctx.clearRect(0,0,W,H);
     for (var i=0;i<fall.length;i++){
@@ -736,7 +738,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
         var bd = beads[p.seat];
         if (!onScreen){ bd.claimed = false; p.seat = -1; continue; }
         var q = pointAt(bd.t, bd.f, bd.off);
-        var tx = secLeft + q.x, ty = secTop + q.y;
+        var tx = stageLeft + q.x, ty = stageTop + q.y;
         p.grab += .034;
         var e = p.grab < 1 ? p.grab*p.grab*(3-2*p.grab) : 1;
         p.x += (tx - p.x)*(.07 + .15*e); p.y += (ty - p.y)*(.07 + .15*e);
@@ -749,11 +751,11 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
       }
       if (past) continue;
       p.y += p.vy; p.ph += .01; p.a += p.spin; p.x += Math.cos(p.ph)*.35;
-      if (onScreen && p.y > secTop - H*0.4 && p.y < secTop + SH){
+      if (onScreen && p.y > stageTop - H*0.4 && p.y < stageTop + SH){
         var fs = freeSeat();
         if (fs >= 0){ p.seat = fs; beads[fs].claimed = true; p.grab = 0; }
       }
-      if (onScreen && p.y > secTop + SH - 12){
+      if (onScreen && p.y > stageTop + SH - 12){
         p.al -= .03;
         if (p.al <= 0){ fall[i] = makeFall(true); continue; }
       }
@@ -776,13 +778,43 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   function start(){ if (running) return; running = true; if (!raf) raf = requestAnimationFrame(step); }
   function stop(){ running = false; if (raf){ cancelAnimationFrame(raf); raf = 0; } }
 
+  /* ---- which pair is being read ---- */
+  function wireSteps(){
+    var rows = [];
+    for (var i=0;i<STEPS;i++){
+      rows.push({
+        l: sec.querySelector('.scicol.left li[data-step="' + i + '"]'),
+        r: sec.querySelector('.scicol.right li[data-step="' + i + '"]')
+      });
+    }
+    function setActive(i){
+      if (i === active) return;
+      active = i;
+      for (var k=0;k<rows.length;k++){
+        var on = k === i;
+        if (rows[k].l) rows[k].l.classList.toggle("on", on);
+        if (rows[k].r) rows[k].r.classList.toggle("on", on);
+      }
+    }
+    if (!("IntersectionObserver" in window)){ sec.classList.add("sci-static"); return; }
+    var io = new IntersectionObserver(function(es){
+      var best = null;
+      es.forEach(function(e){ if (e.isIntersecting) best = e; });
+      if (best){ var n = +best.target.getAttribute("data-step"); if (!isNaN(n)) setActive(n); }
+    }, { rootMargin: "-42% 0px -42% 0px", threshold: 0 });
+    for (var j=0;j<rows.length;j++) if (rows[j].l) io.observe(rows[j].l);
+    setActive(0);
+  }
+
   var reducedQ = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches;
   resize();
   if (reducedQ){
+    sec.classList.add("sci-static");
     for (var z=0;z<beads.length;z++) beads[z].filled = true;
-    drawHelix();
+    lit = 2; drawHelix();
     return;
   }
+  wireSteps();
   var rt = 0;
   window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(resize, 160); }, { passive: true });
   document.addEventListener("visibilitychange", function(){ document.hidden ? stop() : start(); });
