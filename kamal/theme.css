@@ -485,7 +485,7 @@ h1,h2,h3{color:var(--struct2)}
 .lhint{color:#5F4F40}
 .badge.live{background:#DCEFE2;color:#2F6A40}
 /* tap targets: at least 44 px for every link and button */
-.links a{min-height:44px;display:inline-flex;align-items:center}
+.links a{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}
 .links a.mobile-only{display:none}
 @media (max-width:1024px){.links a.mobile-only{display:inline-flex}}
 .btn{min-height:44px}
@@ -525,10 +525,10 @@ h1,h2,h3{color:var(--struct2)}
 @media (max-width:1024px){.dd{position:static;opacity:1;visibility:visible;transform:none;box-shadow:none;border:0;padding:0 0 10px 10px;min-width:0;background:transparent;display:none}.has-dd.open .dd{display:grid}.links .has-dd>a::after{display:none}.dd a{min-height:44px;border-bottom:0}.has-dd{display:grid;grid-template-columns:minmax(0,1fr) 46px;align-items:center;border-bottom:1px solid var(--line)}.has-dd>a{border-bottom:0}.has-dd .dd{grid-column:1 / -1}.ddtog{display:grid}}
 /* breadcrumbs */
 .crumbs{border-bottom:1px solid var(--line);background:var(--bg2)}
-.crumbs ol{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;margin:0;padding:0;list-style:none;font-size:.82rem}
+.crumbs ol{display:flex;flex-wrap:wrap;align-items:center;gap:0 2px;margin:0;padding:0;list-style:none;font-size:.82rem}
 .crumbs li{display:flex;align-items:center;gap:8px;color:var(--muted)}
 .crumbs li+li::before{content:"/";color:var(--line2)}
-.crumbs a,.crumbs span{min-height:44px;display:inline-flex;align-items:center}
+.crumbs a,.crumbs span{min-height:44px;display:inline-flex;align-items:center;padding:0 7px}
 .crumbs a{color:var(--muted);text-decoration:none}
 .crumbs a:hover{color:var(--accT);text-decoration:underline}
 .crumbs [aria-current] span{color:var(--struct2);font-weight:600}
@@ -744,7 +744,7 @@ h1,h2{letter-spacing:-.012em}
 .back{margin:0 0 10px;font-size:.92rem}
 .back a{display:inline-flex;align-items:center;min-height:44px;margin:-12px 0}
 .back a{color:var(--accT);font-weight:700}
-.links a.on{border-color:var(--acc);color:var(--accT)}
+.links a.on{border-color:var(--acc);color:#8F4609}
 .links .dd a.all,.links .dd a.all.on{color:#8F4609;border-color:transparent}
 /* fees strip */
 .fees{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:22px}
@@ -878,6 +878,7 @@ body.modal-open{overflow:hidden}
 /* practices: list + live window */
 .ptwo{display:grid;grid-template-columns:280px minmax(0,1fr);gap:22px;align-items:start}
 .plist2{display:grid;gap:8px}
+.ptabs{display:grid;gap:8px}
 .plist2 button{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center;text-align:left;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);font:inherit;transition:border-color .25s,background .25s,transform .25s}
 .plist2 button .emoji{grid-row:span 2;font-size:1.5rem}
 .plist2 button b{font-weight:400;font-size:1.1rem;color:var(--struct2)}
@@ -891,7 +892,7 @@ body.modal-open{overflow:hidden}
 .fc{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px}
 .fc img{width:150px;height:170px;object-fit:cover;border-radius:14px}
 .fc h3{font-size:1.5rem}
-.fc .en-name{margin:0}
+.fc .en-name,.fcard .en-name{margin:0;color:#8F4609}
 .fc .role{margin:4px 0 8px}
 .fc p.dev{margin:10px 0 0;font-size:1rem;color:var(--struct);line-height:1.6}
 /* journey page: chapters + sticky lotus */

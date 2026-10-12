@@ -725,6 +725,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   }
   function track(){ var sr = hx.getBoundingClientRect(); stageTop = sr.top; stageLeft = sr.left; }
   function resize(){
+    readPalette();                            /* must run before any petal is created */
     dpr = Math.min(window.innerWidth < 760 ? 1.25 : 1.6, window.devicePixelRatio || 1);
     W = window.innerWidth; H = window.innerHeight;
     sky.width = Math.round(W*dpr); sky.height = Math.round(H*dpr);
