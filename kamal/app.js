@@ -530,25 +530,28 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   var ctx = cv.getContext("2d");
   var W = 0, H = 0, dpr = 1, raf = 0, running = false, narrow = false;
   var fall = [], slots = [], sprites = [], rungT = [];
-  var phase = 0, SPIN = 0.0024, TURNS = 2.6, FOCAL = 780;
-  var CX = 0, TOP = 0, HH = 0, RAD = 0, GUTL = 0, GUTR = 0;
+  var phase = 0, SPIN = 0.0024, TURNS = 4.4, FOCAL = 780, TILT = -0.40, CT = Math.cos(TILT), ST = Math.sin(TILT);
+  var CX = 0, TOP = 0, HH = 0, RAD = 0;
+  /* the stage is measured against the document once, then tracked by scroll offset, so the
+     animation loop performs no layout reads at all */
+  var docTop = 0, docCx = 0, buf = [], tick = 0;
 
   function rnd(a,b){ return a + Math.random()*(b-a); }
 
   /* ---- one glossy bead per size bucket, drawn once, then only blitted ---- */
-  var BUCKETS = 14, RMIN = 3, RMAX = 14;
+  var BUCKETS = 10, RMIN = 1.4, RMAX = 5.6;
   function buildSprites(){
     sprites.length = 0;
     for (var i=0;i<BUCKETS;i++){
       var r = RMIN + (RMAX - RMIN)*i/(BUCKETS-1);
-      var pad = Math.ceil(r*2.1), s = pad*2;
+      var pad = Math.ceil(r*1.5), s = pad*2;
       var c = document.createElement("canvas");
       c.width = Math.ceil(s*dpr); c.height = Math.ceil(s*dpr);
       var g = c.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
-      var halo = g.createRadialGradient(pad, pad, r*0.75, pad, pad, r*2.0);
-      halo.addColorStop(0, "rgba(232,140,46,.30)");
+      var halo = g.createRadialGradient(pad, pad, r*0.78, pad, pad, r*1.45);
+      halo.addColorStop(0, "rgba(232,140,46,.40)");
       halo.addColorStop(1, "rgba(232,140,46,0)");
-      g.fillStyle = halo; g.beginPath(); g.arc(pad, pad, r*2.0, 0, 6.2832); g.fill();
+      g.fillStyle = halo; g.beginPath(); g.arc(pad, pad, r*1.45, 0, 6.2832); g.fill();
       var body = g.createRadialGradient(pad - r*0.38, pad - r*0.42, r*0.08, pad, pad, r);
       body.addColorStop(0,    "rgba(255,241,214,1)");
       body.addColorStop(0.22, "rgba(250,200,124,1)");
@@ -581,7 +584,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   }
   function makeFall(fromTop){
     return { x: rnd(0, W), y: fromTop ? rnd(-H*0.45, -12) : rnd(-H*0.4, H),
-             r: rnd(4.5, 9.5), vy: rnd(.55, 1.3), a: rnd(0, 6.283), spin: rnd(-.016, .016),
+             r: rnd(3.4, 6.8), vy: rnd(.5, 1.15), a: rnd(0, 6.283), spin: rnd(-.016, .016),
              ph: rnd(0, 6.283), al: rnd(.3, .55), c: PCOL[(Math.random()*PCOL.length)|0],
              seat: -1, grab: 0 };
   }
@@ -590,26 +593,23 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     narrow = W < 900;
     if (!stage) return;
     var sr = stage.getBoundingClientRect();
-    CX = sr.left + sr.width/2; TOP = sr.top; HH = sr.height;
-    RAD = Math.min(sr.width*0.44, narrow ? 116 : 158);
-    var lc = sec.querySelector(".scicol.left"), rc = sec.querySelector(".scicol.right");
-    GUTL = lc ? lc.getBoundingClientRect().right + 8 : 0;
-    GUTR = rc ? rc.getBoundingClientRect().left - 8 : W;
-    rungT.length = 0;
-    var rows = sec.querySelectorAll(".scicol.left li");
-    for (var i=0;i<rows.length;i++){
-      if (narrow) rungT.push((i + 0.5)/rows.length);
-      else { var rr = rows[i].getBoundingClientRect();
-             rungT.push(HH ? Math.max(0, Math.min(1, (rr.top + rr.height/2 - TOP)/HH)) : 0); }
-    }
+    docTop = sr.top + (window.pageYOffset || 0);
+    docCx  = sr.left + sr.width/2 + (window.pageXOffset || 0);
+    HH = sr.height;
+    RAD = Math.min(sr.width*0.34, narrow ? 62 : 86);
+    track();
+  }
+  function track(){
+    TOP = docTop - (window.pageYOffset || 0);
+    CX  = docCx  - (window.pageXOffset || 0);
   }
 
   function buildSeats(){
-    var n = narrow ? 58 : 98;
+    var n = narrow ? 280 : 460;
     slots.length = 0;
     for (var i=0;i<n;i++){
-      slots.push({ t: i/(n-1), side: i & 1, filled: Math.random() < .74,
-                   claimed: false, life: rnd(0, 20), r: rnd(7, 13) });
+      slots.push({ t: i/(n-1), side: i & 1, filled: Math.random() < .9,
+                   claimed: false, life: rnd(0, 24), r: rnd(2.4, 5.2) });
     }
   }
 
@@ -620,7 +620,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     cv.style.width = W + "px"; cv.style.height = H + "px";
     ctx.setTransform(dpr,0,0,dpr,0,0);
     buildSprites();
-    var want = W < 760 ? 28 : 48;
+    var want = W < 760 ? 9 : 16;
     while (fall.length < want) fall.push(makeFall(false));
     fall.length = want;
     narrow = W < 900;
@@ -628,12 +628,18 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     measure();
   }
 
+  function lean(x, y){
+    var dx = x - CX, dy = y - (TOP + HH/2);
+    return { x: CX + dx*CT - dy*ST, y: TOP + HH/2 + dx*ST + dy*CT };
+  }
   function seatPos(s){
     var ang = s.t*TURNS*6.2832 + phase + (s.side ? Math.PI : 0);
     var z = Math.cos(ang)*RAD, k = FOCAL/(FOCAL + z);
-    return { x: CX + Math.sin(ang)*RAD*k, y: TOP + s.t*HH, k: k, z: z };
+    var q = lean(CX + Math.sin(ang)*RAD*k, TOP + s.t*HH);
+    return { x: q.x, y: q.y, k: k, z: z };
   }
 
+  function byZ(m,n){ return m.z - n.z; }
   function freeSeat(){
     for (var i=0;i<slots.length;i++) if (!slots[i].filled && !slots[i].claimed) return i;
     return -1;
@@ -646,40 +652,30 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
       for (var i=0;i<=72;i++){
         var t = i/72, ang = t*TURNS*6.2832 + phase + (side ? Math.PI : 0);
         var z = Math.cos(ang)*RAD, k = FOCAL/(FOCAL + z);
-        var x = CX + Math.sin(ang)*RAD*k, y = TOP + t*HH;
-        i ? ctx.lineTo(x,y) : ctx.moveTo(x,y);
+        var q = lean(CX + Math.sin(ang)*RAD*k, TOP + t*HH);
+        i ? ctx.lineTo(q.x,q.y) : ctx.moveTo(q.x,q.y);
       }
       ctx.globalAlpha = .2; ctx.lineWidth = 2; ctx.strokeStyle = "rgba(170,86,20,.75)"; ctx.stroke();
     }
     ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(150,74,16,.85)";
-    for (var p=0;p+1<slots.length;p+=2){
+    for (var p=0;p+1<slots.length;p+=14){
       if (!slots[p].filled && !slots[p+1].filled) continue;
       var a = seatPos(slots[p]), b = seatPos(slots[p+1]);
       ctx.globalAlpha = Math.max(.07, .32*((a.k + b.k)/2 - .78));
       ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
     }
-    if (!narrow){
-      ctx.save(); ctx.setLineDash([3,6]); ctx.globalAlpha = .18; ctx.strokeStyle = "rgba(120,70,30,.9)";
-      for (var q=0;q<rungT.length;q++){
-        var y = TOP + rungT[q]*HH;
-        /* stay in the gutter: these must never run across the card text */
-        var lx = CX - RAD - 12, rx = CX + RAD + 12;
-        ctx.beginPath();
-        if (lx > GUTL){ ctx.moveTo(lx, y); ctx.lineTo(GUTL, y); }
-        if (rx < GUTR){ ctx.moveTo(rx, y); ctx.lineTo(GUTR, y); }
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-    var vis = [];
+    var n = 0;
     for (var s=0;s<slots.length;s++){
       if (!slots[s].filled) continue;
       var pos = seatPos(slots[s]);
-      vis.push({ x: pos.x, y: pos.y, k: pos.k, z: pos.z, r: slots[s].r });
+      var rec = buf[n] || (buf[n] = { x:0, y:0, k:0, z:0, r:0 });
+      rec.x = pos.x; rec.y = pos.y; rec.k = pos.k; rec.z = pos.z; rec.r = slots[s].r;
+      n++;
     }
-    vis.sort(function(m,n){ return m.z - n.z; });
-    for (var v=0;v<vis.length;v++){
-      var it = vis[v];
+    var view = buf.length === n ? buf : buf.slice(0, n);
+    view.sort(byZ);
+    for (var v=0;v<n;v++){
+      var it = view[v];
       bead(it.x, it.y, it.r*it.k, Math.max(.3, Math.min(1, it.k*it.k)));
     }
   }
@@ -688,8 +684,9 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     raf = 0; if (!running) return;
     ctx.clearRect(0,0,W,H);
     phase += SPIN;
-    if (stage) measure();
+    if (stage){ track(); if ((++tick & 63) === 0) measure(); }   /* re-measure about once a second */
     var onScreen = !!stage && TOP < H + 100 && TOP + HH > -100;
+    var past = !!stage && (TOP + HH) < 0;   /* the helix is the end of the fall, so nothing below it */
 
     for (var i=0;i<fall.length;i++){
       var p = fall[i];
@@ -711,10 +708,15 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
         petal(p);
         continue;
       }
+      if (past) continue;                       /* scrolled below the helix: the air is clear */
       p.y += p.vy; p.ph += .01; p.a += p.spin; p.x += Math.cos(p.ph)*.35;
-      if (onScreen && p.y > TOP - H*0.4 && p.y < TOP + HH){
+      if (onScreen && p.y > TOP - H*0.45 && p.y < TOP + HH){
         var fs = freeSeat();
         if (fs >= 0){ p.seat = fs; slots[fs].claimed = true; p.grab = 0; }
+      }
+      if (onScreen && p.y > TOP + HH - 12){     /* every seat taken: absorb it rather than let it pass */
+        p.al -= .03;
+        if (p.al <= 0){ fall[i] = makeFall(true); continue; }
       }
       if (p.y > H + 26){ fall[i] = makeFall(true); continue; }
       petal(p);
@@ -725,7 +727,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
         var sl = slots[k];
         if (!sl.filled) continue;
         sl.life += .016;
-        if (sl.life > 18 && Math.random() < .0016){ sl.filled = false; sl.life = 0; }
+        if (sl.life > 18 && Math.random() < .00028){ sl.filled = false; sl.life = 0; }
       }
       drawHelix();
     }
