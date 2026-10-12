@@ -530,8 +530,8 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   var ctx = cv.getContext("2d");
   var W = 0, H = 0, dpr = 1, raf = 0, running = false, narrow = false;
   var fall = [], slots = [], sprites = [], rungT = [];
-  var phase = 0, SPIN = 0.0024, TURNS = 4.4, FOCAL = 780, TILT = -0.40, CT = Math.cos(TILT), ST = Math.sin(TILT);
-  var CX = 0, TOP = 0, HH = 0, RAD = 0;
+  var phase = 0, SPIN = 0.0024, TURNS = 4.5, FOCAL = 620, TILT = -1.02, CT = Math.cos(TILT), ST = Math.sin(TILT);
+  var CX = 0, TOP = 0, HH = 0, RAD = 0, LEN = 0, TUBE = 0, MIDY = 0;
   /* the stage is measured against the document once, then tracked by scroll offset, so the
      animation loop performs no layout reads at all */
   var docTop = 0, docCx = 0, buf = [], tick = 0;
@@ -539,7 +539,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   function rnd(a,b){ return a + Math.random()*(b-a); }
 
   /* ---- one glossy bead per size bucket, drawn once, then only blitted ---- */
-  var BUCKETS = 10, RMIN = 1.4, RMAX = 5.6;
+  var BUCKETS = 11, RMIN = 1.6, RMAX = 7.0;
   function buildSprites(){
     sprites.length = 0;
     for (var i=0;i<BUCKETS;i++){
@@ -596,7 +596,11 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     docTop = sr.top + (window.pageYOffset || 0);
     docCx  = sr.left + sr.width/2 + (window.pageXOffset || 0);
     HH = sr.height;
-    RAD = Math.min(sr.width*0.34, narrow ? 62 : 86);
+    LEN  = Math.min(HH*0.64, narrow ? 215 : 300);   /* about half the old axis length, with
+                                                      enough pitch that the two strands stay apart */
+    MIDY = HH/2;
+    RAD  = Math.min(sr.width*0.24, narrow ? 46 : 66);
+    TUBE = narrow ? 6.2 : 8.4;                       /* a tight bundle, so the curl reads as rope */
     track();
   }
   function track(){
@@ -605,11 +609,13 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   }
 
   function buildSeats(){
-    var n = narrow ? 280 : 460;
+    var n = narrow ? 620 : 1200;
     slots.length = 0;
     for (var i=0;i<n;i++){
-      slots.push({ t: i/(n-1), side: i & 1, filled: Math.random() < .9,
-                   claimed: false, life: rnd(0, 24), r: rnd(2.4, 5.2) });
+      var u = Math.random()*6.2832, v = Math.sqrt(Math.random());
+      slots.push({ t: (i>>1)/((n>>1)-1), side: i & 1, filled: Math.random() < .93,
+                   claimed: false, life: rnd(0, 26), r: rnd(2.9, 6.1),
+                   or: Math.cos(u)*v*TUBE, oy: Math.sin(u)*v*TUBE, oz: Math.cos(u+1.7)*v*TUBE });
     }
   }
 
@@ -629,13 +635,15 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   }
 
   function lean(x, y){
-    var dx = x - CX, dy = y - (TOP + HH/2);
-    return { x: CX + dx*CT - dy*ST, y: TOP + HH/2 + dx*ST + dy*CT };
+    var dx = x - CX, dy = y - (TOP + MIDY);
+    return { x: CX + dx*CT - dy*ST, y: TOP + MIDY + dx*ST + dy*CT };
   }
+  function axisY(t){ return TOP + MIDY - LEN/2 + t*LEN; }
   function seatPos(s){
     var ang = s.t*TURNS*6.2832 + phase + (s.side ? Math.PI : 0);
-    var z = Math.cos(ang)*RAD, k = FOCAL/(FOCAL + z);
-    var q = lean(CX + Math.sin(ang)*RAD*k, TOP + s.t*HH);
+    var rr = RAD + s.or;
+    var z = Math.cos(ang)*rr + s.oz, k = FOCAL/(FOCAL + z);
+    var q = lean(CX + Math.sin(ang)*rr*k, axisY(s.t) + s.oy);
     return { x: q.x, y: q.y, k: k, z: z };
   }
 
@@ -649,16 +657,16 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     if (!stage) return;
     for (var side=0; side<2; side++){
       ctx.beginPath();
-      for (var i=0;i<=72;i++){
-        var t = i/72, ang = t*TURNS*6.2832 + phase + (side ? Math.PI : 0);
+      for (var i=0;i<=96;i++){
+        var t = i/96, ang = t*TURNS*6.2832 + phase + (side ? Math.PI : 0);
         var z = Math.cos(ang)*RAD, k = FOCAL/(FOCAL + z);
-        var q = lean(CX + Math.sin(ang)*RAD*k, TOP + t*HH);
+        var q = lean(CX + Math.sin(ang)*RAD*k, axisY(t));
         i ? ctx.lineTo(q.x,q.y) : ctx.moveTo(q.x,q.y);
       }
-      ctx.globalAlpha = .2; ctx.lineWidth = 2; ctx.strokeStyle = "rgba(170,86,20,.75)"; ctx.stroke();
+      ctx.globalAlpha = .12; ctx.lineWidth = 1.4; ctx.strokeStyle = "rgba(170,86,20,.7)"; ctx.stroke();
     }
     ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(150,74,16,.85)";
-    for (var p=0;p+1<slots.length;p+=14){
+    for (var p=0;p+1<slots.length;p+=90){
       if (!slots[p].filled && !slots[p+1].filled) continue;
       var a = seatPos(slots[p]), b = seatPos(slots[p+1]);
       ctx.globalAlpha = Math.max(.07, .32*((a.k + b.k)/2 - .78));
@@ -727,7 +735,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
         var sl = slots[k];
         if (!sl.filled) continue;
         sl.life += .016;
-        if (sl.life > 18 && Math.random() < .00028){ sl.filled = false; sl.life = 0; }
+        if (sl.life > 18 && Math.random() < .00014){ sl.filled = false; sl.life = 0; }
       }
       drawHelix();
     }
