@@ -583,9 +583,11 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     g.strokeStyle = rgba(mix(tone,WH,.92),1); g.stroke();
     return { c: c, pad: pad, r: r };
   }
+  var bankReady = false;
   function buildSprites(){
     readPalette();
     bank.length = 0;
+    bankReady = true;
     for (var t=0;t<TONES.length;t++){
       var byBlur = [];
       for (var b=0;b<BLURS.length;b++){
@@ -685,6 +687,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   function byZ(m,n){ return m.z - n.z; }
 
   function drawHelix(){
+    if (!bankReady) buildSprites();          /* built the first time it is actually seen */
     hctx.clearRect(0,0,SW,SH);
     var n = 0;
     for (var s=0;s<beads.length;s++){
@@ -727,7 +730,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     sky.width = Math.round(W*dpr); sky.height = Math.round(H*dpr);
     sky.style.width = W + "px"; sky.style.height = H + "px";
     sctx.setTransform(dpr,0,0,dpr,0,0);
-    buildSprites();
+    if (bankReady) buildSprites();           /* only rebuild a bank that already exists */
     var want = W < 760 ? 9 : 16;
     while (fall.length < want) fall.push(makeFall(false));
     fall.length = want;
@@ -751,11 +754,11 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
         if (!onScreen){ bd.claimed = false; p.seat = -1; continue; }
         var q = pointAt(bd.t, bd.f, bd.off);
         var tx = stageLeft + q.x, ty = stageTop + q.y;
-        p.grab += .034;
+        p.grab += .011;
         var e = p.grab < 1 ? p.grab*p.grab*(3-2*p.grab) : 1;
-        p.x += (tx - p.x)*(.07 + .15*e); p.y += (ty - p.y)*(.07 + .15*e);
+        p.x += (tx - p.x)*(.022 + .055*e); p.y += (ty - p.y)*(.022 + .055*e);
         p.a += p.spin*(1-e); p.al = .45 + .45*(1-e);
-        if (e >= 1 && Math.abs(p.x-tx) < 3 && Math.abs(p.y-ty) < 3){
+        if (e >= 1 && Math.abs(p.x-tx) < 4 && Math.abs(p.y-ty) < 4){
           bd.filled = true; bd.claimed = false; bd.life = 0;
           fall[i] = makeFall(true); continue;
         }
@@ -792,6 +795,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
 
   var reducedQ = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches;
   resize();
+  readPalette();
   if (reducedQ){
     for (var z=0;z<beads.length;z++) beads[z].filled = true;
     drawHelix();
@@ -801,7 +805,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(resize, 200); }, { passive: true });
   document.addEventListener("visibilitychange", function(){ document.hidden ? stop() : start(); });
   if (window.MutationObserver){
-    new MutationObserver(function(){ buildSprites();
+    new MutationObserver(function(){ if (bankReady) buildSprites(); readPalette();
       for (var i=0;i<fall.length;i++) fall[i].c = PCOL[(Math.random()*PCOL.length)|0];
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-pal"] });
   }
