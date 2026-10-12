@@ -528,13 +528,13 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   var sky = document.querySelector("[data-petalfall]");
   var sec = document.querySelector("[data-sci]");
   var hx  = sec && sec.querySelector("[data-scihelix]");
-  var band = sec && sec.querySelector("[data-scistage]");
-  if (!sky || !sec || !hx || !band) return;
+  var grid = sec && sec.querySelector("[data-scigrid]");
+  if (!sky || !sec || !hx || !grid) return;
   var sctx = sky.getContext("2d"), hctx = hx.getContext("2d");
   var W = 0, H = 0, SW = 0, SH = 0, dpr = 1, raf = 0, running = false, narrow = false;
   var fall = [], beads = [], sprites = [], buf = [], tick = 0;
   var phase = 0, SPIN = 0.0019, TURNS = 2.6, FOCAL = 820;
-  var AX = 0, AY = 0, LEN = 0, RAD = 0, CA = 0, SA = 0;
+  var AX = 0, AY = 0, LEN = 0, RAD = 0, CA = 0, SA = 0, GY = 0;
   var docTop = 0, docLeft = 0, secTop = 0, secLeft = 0;
 
   function rnd(a,b){ return a + Math.random()*(b-a); }
@@ -613,11 +613,11 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   /* ---- geometry: two beaded backbones and rungs that are themselves bead chains ---- */
   function geometry(){
     narrow = SW < 900;
-    var leanA = narrow ? -1.12 : -1.25;
+    var leanA = narrow ? -1.10 : -1.17;
     CA = Math.cos(leanA); SA = Math.sin(leanA);
-    LEN = narrow ? Math.min(SW*0.54, 272) : Math.min(SW*0.48, 570);
-    RAD = narrow ? Math.min(SW*0.155, 66) : Math.min(SW*0.098, 118);
-    AX = SW*0.5; AY = SH*0.5;
+    LEN = narrow ? Math.min(SW*0.62, 260) : Math.min(SW*0.50, 740);
+    RAD = narrow ? Math.min(SW*0.17, 60) : Math.min(SW*0.076, 110);
+    AX = SW*0.5; AY = GY;
   }
   /* f = 0 on strand A, 1 on strand B; a backbone bead uses f 0 or 1 */
   function pointAt(t, f, off){
@@ -671,7 +671,15 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     for (var s=0;s<beads.length;s++){
       var bd = beads[s]; if (!bd.filled) continue;
       var p = pointAt(bd.t, bd.f, bd.off);
-      var rec = buf[n] || (buf[n] = { x:0,y:0,k:0,z:0,r:0,tone:0,st:false });
+      var rec = buf[n] || (buf[n] = { x:0,y:0,k:0,z:0,r:0,tone:0,st:false,fade:1 });
+      var e = Math.min(bd.t, 1 - bd.t)/0.16;            /* die away at both ends of the strand */
+      var ef = e >= 1 ? 1 : e*e*(3 - 2*e);
+      var u = p.x/SW, hf;                                /* and dissolve where the columns begin */
+      if (u < 0.06 || u > 0.94) hf = 0;
+      else if (u < 0.32) hf = 0.20 + 0.80*(u - 0.06)/0.26;
+      else if (u > 0.68) hf = 0.20 + 0.80*(0.94 - u)/0.26;
+      else hf = 1;
+      rec.fade = ef*hf;
       rec.x = p.x; rec.y = p.y; rec.k = p.k; rec.z = p.z; rec.r = bd.r; rec.tone = bd.tone; rec.st = !!bd.stray;
       n++;
     }
@@ -679,14 +687,16 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     view.sort(byZ);
     for (var v=0;v<n;v++){
       var it = view[v];
-      var a = Math.max(.3, Math.min(1, (it.k - .7)*2.4));
+      var a = Math.max(.3, Math.min(1, (it.k - .7)*2.4)) * it.fade;
       sphere(hctx, it.tone, it.x, it.y, it.r*it.k, it.st ? a*.5 : a);
     }
     hctx.globalAlpha = 1;
   }
 
   function measure(){
-    var sr = band.getBoundingClientRect();
+    var sr = sec.getBoundingClientRect();
+    var gr = grid.getBoundingClientRect();
+    GY = gr.top - sr.top + gr.height/2;
     docTop = sr.top + (window.pageYOffset||0); docLeft = sr.left + (window.pageXOffset||0);
     SW = Math.max(1, Math.round(sr.width)); SH = Math.max(1, Math.round(sr.height));
     hx.width = Math.round(SW*dpr); hx.height = Math.round(SH*dpr);
