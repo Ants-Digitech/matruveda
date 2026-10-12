@@ -615,8 +615,8 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     narrow = SW < 900;
     var leanA = narrow ? -1.10 : -1.17;
     CA = Math.cos(leanA); SA = Math.sin(leanA);
-    LEN = narrow ? Math.min(SW*0.62, 260) : Math.min(SW*0.50, 740);
-    RAD = narrow ? Math.min(SW*0.17, 60) : Math.min(SW*0.076, 110);
+    LEN = narrow ? Math.min(SW*0.62, 260) : Math.min(SW*0.54, 790);
+    RAD = narrow ? Math.min(SW*0.17, 60) : Math.min(SW*0.082, 122);
     AX = SW*0.5; AY = GY;
   }
   /* f = 0 on strand A, 1 on strand B; a backbone bead uses f 0 or 1 */
@@ -675,9 +675,9 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
       var e = Math.min(bd.t, 1 - bd.t)/0.16;            /* die away at both ends of the strand */
       var ef = e >= 1 ? 1 : e*e*(3 - 2*e);
       var u = p.x/SW, hf;                                /* and dissolve where the columns begin */
-      if (u < 0.06 || u > 0.94) hf = 0;
-      else if (u < 0.32) hf = 0.20 + 0.80*(u - 0.06)/0.26;
-      else if (u > 0.68) hf = 0.20 + 0.80*(0.94 - u)/0.26;
+      if (u < 0.05 || u > 0.95) hf = 0;
+      else if (u < 0.29) hf = 0.18 + 0.82*(u - 0.05)/0.24;
+      else if (u > 0.71) hf = 0.18 + 0.82*(0.95 - u)/0.24;
       else hf = 1;
       rec.fade = ef*hf;
       rec.x = p.x; rec.y = p.y; rec.k = p.k; rec.z = p.z; rec.r = bd.r; rec.tone = bd.tone; rec.st = !!bd.stray;
