@@ -562,7 +562,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     PCOL = [rgba(ACC,.55), rgba(mix(ACC,WHITE,.3),.5), rgba(mix(ACC,GOLD,.6),.45), rgba(ACCD,.5)];
   }
 
-  var BUCKETS = 9, RMIN = 1.2, RMAX = 6.4;
+  var BUCKETS = 10, RMIN = 0.9, RMAX = 7.0;
   function buildSprites(){
     readPalette();
     sprites.length = 0;
@@ -612,42 +612,46 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     narrow = window.innerWidth < 900;
     CA = 1; SA = 0;                      /* upright: the axis runs straight down the panel */
     TURNS = 4;
-    LEN = SH*0.90;
-    RAD = Math.min(SW*0.26, narrow ? 86 : 118);
+    LEN = SH*0.95;
+    RAD = Math.min(SW*0.135, narrow ? 46 : 50);
     AX = SW*0.5; AY = SH*0.5;
   }
+  /* the two strands sit about 220 degrees apart, not 180: that asymmetry is what gives real DNA
+     its major and minor groove. Mirrored strands project to a symmetric lens and read as a tube. */
+  var GROOVE = 6.2832*0.615;
   function pointAt(t, f, off){
-    var ang = t*TURNS*6.2832 + phase;
-    var xA = Math.sin(ang)*RAD, zA = Math.cos(ang);
+    var angA = t*TURNS*6.2832 + phase, angB = angA + GROOVE;
+    var xA = Math.sin(angA)*RAD, zA = Math.cos(angA);
+    var xB = Math.sin(angB)*RAD, zB = Math.cos(angB);
     /* f runs 0 on one strand to 1 on the other, so a rung is a straight line between them */
-    var x = xA + (-2*xA)*f, z = zA + (-2*zA)*f;
+    var x = xA + (xB - xA)*f, z = zA + (zB - zA)*f;
     if (off){ x += off.x; }
     var u = (t - 0.5)*LEN + (off ? off.u : 0);
     /* depth is used only to size and sort the beads, never to bend the shape */
-    return { x: AX + x, y: AY + u, k: 0.74 + 0.26*(z*0.5 + 0.5), z: z };
+    return { x: AX + x, y: AY + u, k: 0.66 + 0.34*(z*0.5 + 0.5), z: z };
   }
 
   function buildBeads(){
     beads.length = 0;
-    var perStrand = narrow ? 430 : 860;
+    var perStrand = narrow ? 320 : 620;
     for (var side=0; side<2; side++){
       for (var i=0;i<perStrand;i++){
-        beads.push({ t: i/(perStrand-1), f: side, r: rnd(2.3, 4.7), rung: -1,
+        beads.push({ t: i/(perStrand-1), f: side, r: rnd(3.1, 6.2), rung: -1,
                      off: { x: rnd(-1.6,1.6), z: 0, u: rnd(-1.6,1.6) },
                      tone: (Math.random()*7)|0, filled: Math.random() < .93, claimed: false, life: rnd(0,26) });
       }
     }
     /* one rung per pair of statements, plus quieter rungs between them */
-    var per = narrow ? 15 : 22, between = 4;
-    for (var s2=0; s2<STEPS; s2++){
+    var per = narrow ? 16 : 24, rungs = narrow ? 15 : 22, between = 0;
+    for (var s2=0; s2<rungs; s2++){
       for (var b2=0; b2<=between; b2++){
-        var isStep = b2 === 0;
-        var t = (s2 + (b2/(between+1)) + 0.5/(between+1)) / STEPS;
+        var isStep = s2 % Math.max(1, Math.round(rungs/STEPS)) === 0;
+        var t = (s2 + 0.5)/rungs;
         if (t > 1) continue;
-        var count = isStep ? per : Math.round(per*0.55);
+        var count = per;
         for (var j=0;j<count;j++){
           var f = j/(count-1);
-          beads.push({ t: t, f: f, r: isStep ? rnd(2.1,3.9) : rnd(1.6,2.8), rung: isStep ? s2 : -1,
+          beads.push({ t: t, f: f, r: isStep ? rnd(2.2,3.5) : rnd(1.9,3.0), rung: isStep ? s2 : -1,
                        off: { x: rnd(-1.2,1.2), z: 0, u: rnd(-1.2,1.2) },
                        tone: (Math.random()*7)|0, filled: Math.random() < .93, claimed: false, life: rnd(0,26) });
         }
@@ -685,7 +689,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     view.sort(byZ);
     for (var v=0;v<n;v++){
       var it = view[v];
-      var a = Math.max(.42, Math.min(1, (it.k - .62)*2.6)) * it.fade;
+      var a = Math.max(.34, Math.min(1, (it.k - .52)*2.1)) * it.fade;
       a = Math.min(1, a*(0.72 + 0.55*it.glow));
       sphere(hctx, it.tone, it.x, it.y, it.r*it.k*(1 + 0.3*it.glow), it.st ? a*.5 : a);
     }
