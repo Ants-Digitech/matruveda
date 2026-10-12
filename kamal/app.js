@@ -539,9 +539,26 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
 
   function rnd(a,b){ return a + Math.random()*(b-a); }
 
-  /* ---- spheres, pre-rendered once per size bucket ---- */
+  /* ---- spheres, pre-rendered once per size bucket, in the active palette ---- */
   var BUCKETS = 16, RMIN = 2, RMAX = 19;
+  function hex(v, fallback){
+    v = (v || "").trim();
+    var m = /^#?([0-9a-f]{6})$/i.exec(v);
+    if (m){ var n = parseInt(m[1],16); return [n>>16 & 255, n>>8 & 255, n & 255]; }
+    m = /rgba?\(([^)]+)\)/.exec(v);
+    if (m){ var a = m[1].split(","); return [+a[0]|0, +a[1]|0, +a[2]|0]; }
+    return fallback;
+  }
+  function mix(a, b, t){ return [Math.round(a[0]+(b[0]-a[0])*t), Math.round(a[1]+(b[1]-a[1])*t), Math.round(a[2]+(b[2]-a[2])*t)]; }
+  function rgba(c, a){ return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+  var ACC = [224,122,31], ACCD = [184,92,18];
+  function readPalette(){
+    var cs = getComputedStyle(document.documentElement);
+    ACC  = hex(cs.getPropertyValue("--acc"),  [224,122,31]);
+    ACCD = hex(cs.getPropertyValue("--accD"), [184,92,18]);
+  }
   function buildSprites(){
+    readPalette();
     sprites.length = 0;
     for (var i=0;i<BUCKETS;i++){
       var r = RMIN*Math.pow(RMAX/RMIN, i/(BUCKETS-1));
@@ -549,16 +566,17 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
       var c = document.createElement("canvas");
       c.width = Math.ceil(s*dpr); c.height = Math.ceil(s*dpr);
       var g = c.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
+      var WHITE = [255,255,255], BLACK = [40,16,2];
       var halo = g.createRadialGradient(pad, pad, r*0.8, pad, pad, r*1.45);
-      halo.addColorStop(0, "rgba(234,140,48,.42)");
-      halo.addColorStop(1, "rgba(234,140,48,0)");
+      halo.addColorStop(0, rgba(mix(ACC, WHITE, .06), .42));
+      halo.addColorStop(1, rgba(ACC, 0));
       g.fillStyle = halo; g.beginPath(); g.arc(pad, pad, r*1.45, 0, 6.2832); g.fill();
       var body = g.createRadialGradient(pad - r*0.40, pad - r*0.44, r*0.06, pad, pad, r);
-      body.addColorStop(0,    "rgba(255,245,226,1)");
-      body.addColorStop(0.18, "rgba(252,206,134,1)");
-      body.addColorStop(0.50, "rgba(236,132,34,1)");
-      body.addColorStop(0.84, "rgba(190,82,12,1)");
-      body.addColorStop(1,    "rgba(132,52,6,1)");
+      body.addColorStop(0,    rgba(mix(ACC, WHITE, .92), 1));
+      body.addColorStop(0.18, rgba(mix(ACC, WHITE, .56), 1));
+      body.addColorStop(0.50, rgba(ACC, 1));
+      body.addColorStop(0.84, rgba(ACCD, 1));
+      body.addColorStop(1,    rgba(mix(ACCD, BLACK, .45), 1));
       g.fillStyle = body; g.beginPath(); g.arc(pad, pad, r, 0, 6.2832); g.fill();
       g.globalAlpha = .55; g.fillStyle = "#fff";
       g.beginPath(); g.ellipse(pad - r*0.36, pad - r*0.42, r*0.27, r*0.17, -0.6, 0, 6.2832); g.fill();
@@ -573,7 +591,10 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   }
 
   /* ---- falling petals ---- */
-  var PCOL = ["rgba(224,122,31,.55)","rgba(242,162,76,.5)","rgba(201,162,74,.45)","rgba(184,92,18,.5)"];
+  var PCOL = [];
+  function buildPetalColours(){
+    PCOL = [rgba(ACC,.55), rgba(mix(ACC,[255,255,255],.3),.5), rgba(mix(ACC,[201,162,74],.6),.45), rgba(ACCD,.5)];
+  }
   function petal(p){
     sctx.save(); sctx.translate(p.x, p.y); sctx.rotate(p.a);
     sctx.globalAlpha = p.al; sctx.fillStyle = p.c;
@@ -595,8 +616,8 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     narrow = SW < 900;
     var lean = narrow ? -1.12 : -1.25;            /* sweeps bottom-left to top-right */
     CA = Math.cos(lean); SA = Math.sin(lean);
-    LEN = narrow ? Math.min(SW*0.84, 420) : Math.min(SW*0.74, 880);
-    RAD = narrow ? Math.min(SW*0.17, 72) : Math.min(SW*0.105, 128);
+    LEN = narrow ? Math.min(SW*0.50, 252) : Math.min(SW*0.445, 528);
+    RAD = narrow ? Math.min(SW*0.145, 62) : Math.min(SW*0.090, 109);
     AX = SW*0.5; AY = SH*0.5;
   }
   function pointAt(t, side, off){
@@ -612,10 +633,10 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
 
   function buildBeads(){
     beads.length = 0;
-    var clusters = narrow ? 64 : 104;
+    var clusters = narrow ? 118 : 196;
     for (var c=0;c<clusters;c++){
       var t = c/(clusters-1), side = c & 1;
-      var members = 1 + ((Math.random()*Math.random()*6)|0);      /* mostly small clumps, a few fat */
+      var members = 1 + ((Math.random()*Math.random()*7)|0);      /* mostly small clumps, a few fat */
       for (var m=0;m<members;m++){
         var big = Math.random() < .17;
         beads.push({
@@ -627,7 +648,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
       }
     }
     /* loose spheres drifting around the structure, as in the reference */
-    var strays = narrow ? 14 : 26;
+    var strays = narrow ? 20 : 38;
     for (var s=0;s<strays;s++){
       beads.push({ t: Math.random(), side: Math.random() < .5 ? 0 : 1, r: rnd(2.5, 7), stray: true,
                    off: { u: rnd(-70, 70), v: rnd(-120, 120), r: rnd(-40, 40), z: rnd(-60, 60) },
@@ -649,7 +670,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
         var q = pointAt(i/120, side, null);
         i ? hctx.lineTo(q.x,q.y) : hctx.moveTo(q.x,q.y);
       }
-      hctx.globalAlpha = .16; hctx.lineWidth = 2.4; hctx.strokeStyle = "rgba(176,88,20,.8)"; hctx.stroke();
+      hctx.globalAlpha = .16; hctx.lineWidth = 2.4; hctx.strokeStyle = rgba(ACCD, .8); hctx.stroke();
     }
     /* base pairs across the middle of the structure */
     hctx.lineWidth = 2.2;
@@ -657,7 +678,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
       var t = b/26, a = pointAt(t, 0, null), c2 = pointAt(t, 1, null);
       var kk = (a.k + c2.k)/2;
       hctx.globalAlpha = Math.max(.05, (kk - .82)*.9);
-      hctx.strokeStyle = "rgba(158,78,16,.85)";
+      hctx.strokeStyle = rgba(ACCD, .85);
       hctx.beginPath(); hctx.moveTo(a.x,a.y); hctx.lineTo(c2.x,c2.y); hctx.stroke();
     }
     /* spheres, far to near */
@@ -701,7 +722,7 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     sky.width = Math.round(W*dpr); sky.height = Math.round(H*dpr);
     sky.style.width = W + "px"; sky.style.height = H + "px";
     sctx.setTransform(dpr,0,0,dpr,0,0);
-    buildSprites();
+    buildSprites(); buildPetalColours();
     var want = W < 760 ? 9 : 16;
     while (fall.length < want) fall.push(makeFall(false));
     fall.length = want;
@@ -773,6 +794,11 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   var rt = 0;
   window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(resize, 160); }, { passive: true });
   document.addEventListener("visibilitychange", function(){ document.hidden ? stop() : start(); });
+  if (window.MutationObserver){
+    new MutationObserver(function(){ buildSprites(); buildPetalColours();
+      for (var i=0;i<fall.length;i++) fall[i].c = PCOL[(Math.random()*PCOL.length)|0];
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-pal"] });
+  }
   start();
 })();
 
