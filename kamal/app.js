@@ -523,64 +523,65 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   mark();
 })();
 
-/* ---------- petals fall the length of the page and build a turning helix ---------- */
+/* ---------- petals fall the length of the page and build a sweeping helix ---------- */
 (function(){
-  var cv = document.querySelector("[data-petalfall]"); if (!cv) return;
-  var sec = document.querySelector("[data-sci]"), stage = sec && sec.querySelector("[data-scistage]");
-  var ctx = cv.getContext("2d");
-  var W = 0, H = 0, dpr = 1, raf = 0, running = false, narrow = false;
-  var fall = [], slots = [], sprites = [], rungT = [];
-  var phase = 0, SPIN = 0.0024, TURNS = 4.5, FOCAL = 620, TILT = -1.02, CT = Math.cos(TILT), ST = Math.sin(TILT);
-  var CX = 0, TOP = 0, HH = 0, RAD = 0, LEN = 0, TUBE = 0, MIDY = 0;
-  /* the stage is measured against the document once, then tracked by scroll offset, so the
-     animation loop performs no layout reads at all */
-  var docTop = 0, docCx = 0, buf = [], tick = 0;
+  var sky = document.querySelector("[data-petalfall]");
+  var sec = document.querySelector("[data-sci]");
+  var hx  = sec && sec.querySelector("[data-scihelix]");
+  var band = sec && sec.querySelector("[data-scistage]");
+  if (!sky || !sec || !hx || !band) return;
+  var sctx = sky.getContext("2d"), hctx = hx.getContext("2d");
+  var W = 0, H = 0, SW = 0, SH = 0, dpr = 1, raf = 0, running = false, narrow = false;
+  var fall = [], beads = [], sprites = [], buf = [], tick = 0;
+  var phase = 0, SPIN = 0.0021, TURNS = 2.8, FOCAL = 900;
+  var AX = 0, AY = 0, LEN = 0, RAD = 0, CA = 0, SA = 0;   /* axis anchor, length, amplitude, lean */
+  var docTop = 0, docLeft = 0, secTop = 0, secLeft = 0;
 
   function rnd(a,b){ return a + Math.random()*(b-a); }
 
-  /* ---- one glossy bead per size bucket, drawn once, then only blitted ---- */
-  var BUCKETS = 11, RMIN = 1.6, RMAX = 7.0;
+  /* ---- spheres, pre-rendered once per size bucket ---- */
+  var BUCKETS = 16, RMIN = 2, RMAX = 19;
   function buildSprites(){
     sprites.length = 0;
     for (var i=0;i<BUCKETS;i++){
-      var r = RMIN + (RMAX - RMIN)*i/(BUCKETS-1);
+      var r = RMIN*Math.pow(RMAX/RMIN, i/(BUCKETS-1));
       var pad = Math.ceil(r*1.5), s = pad*2;
       var c = document.createElement("canvas");
       c.width = Math.ceil(s*dpr); c.height = Math.ceil(s*dpr);
       var g = c.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
-      var halo = g.createRadialGradient(pad, pad, r*0.78, pad, pad, r*1.45);
-      halo.addColorStop(0, "rgba(232,140,46,.40)");
-      halo.addColorStop(1, "rgba(232,140,46,0)");
+      var halo = g.createRadialGradient(pad, pad, r*0.8, pad, pad, r*1.45);
+      halo.addColorStop(0, "rgba(234,140,48,.42)");
+      halo.addColorStop(1, "rgba(234,140,48,0)");
       g.fillStyle = halo; g.beginPath(); g.arc(pad, pad, r*1.45, 0, 6.2832); g.fill();
-      var body = g.createRadialGradient(pad - r*0.38, pad - r*0.42, r*0.08, pad, pad, r);
-      body.addColorStop(0,    "rgba(255,241,214,1)");
-      body.addColorStop(0.22, "rgba(250,200,124,1)");
-      body.addColorStop(0.55, "rgba(233,126,30,1)");
-      body.addColorStop(0.86, "rgba(190,84,14,1)");
-      body.addColorStop(1,    "rgba(140,57,8,1)");
+      var body = g.createRadialGradient(pad - r*0.40, pad - r*0.44, r*0.06, pad, pad, r);
+      body.addColorStop(0,    "rgba(255,245,226,1)");
+      body.addColorStop(0.18, "rgba(252,206,134,1)");
+      body.addColorStop(0.50, "rgba(236,132,34,1)");
+      body.addColorStop(0.84, "rgba(190,82,12,1)");
+      body.addColorStop(1,    "rgba(132,52,6,1)");
       g.fillStyle = body; g.beginPath(); g.arc(pad, pad, r, 0, 6.2832); g.fill();
-      g.globalAlpha = .5; g.fillStyle = "#fff";
-      g.beginPath(); g.ellipse(pad - r*0.34, pad - r*0.40, r*0.26, r*0.16, -0.6, 0, 6.2832); g.fill();
-      sprites.push({ c: c, pad: pad });
+      g.globalAlpha = .55; g.fillStyle = "#fff";
+      g.beginPath(); g.ellipse(pad - r*0.36, pad - r*0.42, r*0.27, r*0.17, -0.6, 0, 6.2832); g.fill();
+      sprites.push({ c: c, pad: pad, r: r });
     }
   }
-  function bead(x, y, r, alpha){
-    var i = Math.round((r - RMIN)/(RMAX - RMIN)*(BUCKETS-1));
-    if (i < 0) i = 0; else if (i > BUCKETS-1) i = BUCKETS-1;
-    var sp = sprites[i], d = sp.pad*2;
+  function sphere(ctx, x, y, r, alpha){
+    var i = Math.round(Math.log(Math.max(RMIN, Math.min(RMAX, r))/RMIN)/Math.log(RMAX/RMIN)*(BUCKETS-1));
+    var sp = sprites[i], k = r/sp.r, d = sp.pad*2*k;
     ctx.globalAlpha = alpha;
-    ctx.drawImage(sp.c, x - sp.pad, y - sp.pad, d, d);
+    ctx.drawImage(sp.c, x - sp.pad*k, y - sp.pad*k, d, d);
   }
 
+  /* ---- falling petals ---- */
   var PCOL = ["rgba(224,122,31,.55)","rgba(242,162,76,.5)","rgba(201,162,74,.45)","rgba(184,92,18,.5)"];
   function petal(p){
-    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
-    ctx.globalAlpha = p.al; ctx.fillStyle = p.c;
+    sctx.save(); sctx.translate(p.x, p.y); sctx.rotate(p.a);
+    sctx.globalAlpha = p.al; sctx.fillStyle = p.c;
     var r = p.r;
-    ctx.beginPath(); ctx.moveTo(0,-r);
-    ctx.bezierCurveTo(r*.92,-r*.52, r*.78, r*.52, 0, r);
-    ctx.bezierCurveTo(-r*.78, r*.52, -r*.92,-r*.52, 0,-r);
-    ctx.closePath(); ctx.fill(); ctx.restore();
+    sctx.beginPath(); sctx.moveTo(0,-r);
+    sctx.bezierCurveTo(r*.92,-r*.52, r*.78, r*.52, 0, r);
+    sctx.bezierCurveTo(-r*.78, r*.52, -r*.92,-r*.52, 0,-r);
+    sctx.closePath(); sctx.fill(); sctx.restore();
   }
   function makeFall(fromTop){
     return { x: rnd(0, W), y: fromTop ? rnd(-H*0.45, -12) : rnd(-H*0.4, H),
@@ -589,140 +590,157 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
              seat: -1, grab: 0 };
   }
 
-  function measure(){
-    narrow = W < 900;
-    if (!stage) return;
-    var sr = stage.getBoundingClientRect();
-    docTop = sr.top + (window.pageYOffset || 0);
-    docCx  = sr.left + sr.width/2 + (window.pageXOffset || 0);
-    HH = sr.height;
-    LEN  = Math.min(HH*0.64, narrow ? 215 : 300);   /* about half the old axis length, with
-                                                      enough pitch that the two strands stay apart */
-    MIDY = HH/2;
-    RAD  = Math.min(sr.width*0.24, narrow ? 46 : 66);
-    TUBE = narrow ? 6.2 : 8.4;                       /* a tight bundle, so the curl reads as rope */
-    track();
+  /* ---- the helix: few wide turns, spheres clustered unevenly along two strands ---- */
+  function geometry(){
+    narrow = SW < 900;
+    var lean = narrow ? -1.12 : -1.25;            /* sweeps bottom-left to top-right */
+    CA = Math.cos(lean); SA = Math.sin(lean);
+    LEN = narrow ? Math.min(SW*0.84, 420) : Math.min(SW*0.74, 880);
+    RAD = narrow ? Math.min(SW*0.17, 72) : Math.min(SW*0.105, 128);
+    AX = SW*0.5; AY = SH*0.5;
   }
-  function track(){
-    TOP = docTop - (window.pageYOffset || 0);
-    CX  = docCx  - (window.pageXOffset || 0);
+  function pointAt(t, side, off){
+    var ang = t*TURNS*6.2832 + phase + (side ? Math.PI : 0);
+    var rr = RAD + (off ? off.r : 0);
+    var z = Math.cos(ang)*rr + (off ? off.z : 0);
+    var k = FOCAL/(FOCAL + z);
+    /* local frame: u runs along the axis, v across it, then the whole thing leans */
+    var u = (t - 0.5)*LEN + (off ? off.u : 0);
+    var v = Math.sin(ang)*rr*k + (off ? off.v : 0);
+    return { x: AX + v*CA - u*SA, y: AY + v*SA + u*CA, k: k, z: z };
   }
 
-  function buildSeats(){
-    var n = narrow ? 620 : 1200;
-    slots.length = 0;
-    for (var i=0;i<n;i++){
-      var u = Math.random()*6.2832, v = Math.sqrt(Math.random());
-      slots.push({ t: (i>>1)/((n>>1)-1), side: i & 1, filled: Math.random() < .93,
-                   claimed: false, life: rnd(0, 26), r: rnd(2.9, 6.1),
-                   or: Math.cos(u)*v*TUBE, oy: Math.sin(u)*v*TUBE, oz: Math.cos(u+1.7)*v*TUBE });
+  function buildBeads(){
+    beads.length = 0;
+    var clusters = narrow ? 64 : 104;
+    for (var c=0;c<clusters;c++){
+      var t = c/(clusters-1), side = c & 1;
+      var members = 1 + ((Math.random()*Math.random()*6)|0);      /* mostly small clumps, a few fat */
+      for (var m=0;m<members;m++){
+        var big = Math.random() < .17;
+        beads.push({
+          t: Math.max(0, Math.min(1, t + rnd(-0.008, 0.008))), side: side,
+          r: big ? rnd(10, 18) : rnd(3.4, 9),
+          off: { u: rnd(-14, 14), v: rnd(-13, 13), r: rnd(-10, 10), z: rnd(-16, 16) },
+          filled: Math.random() < .9, claimed: false, life: rnd(0, 26)
+        });
+      }
+    }
+    /* loose spheres drifting around the structure, as in the reference */
+    var strays = narrow ? 14 : 26;
+    for (var s=0;s<strays;s++){
+      beads.push({ t: Math.random(), side: Math.random() < .5 ? 0 : 1, r: rnd(2.5, 7), stray: true,
+                   off: { u: rnd(-70, 70), v: rnd(-120, 120), r: rnd(-40, 40), z: rnd(-60, 60) },
+                   filled: true, claimed: false, life: 0 });
     }
   }
 
-  function resize(){
-    dpr = Math.min(window.innerWidth < 760 ? 1.4 : 1.75, window.devicePixelRatio || 1);
-    W = window.innerWidth; H = window.innerHeight;
-    cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
-    cv.style.width = W + "px"; cv.style.height = H + "px";
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    buildSprites();
-    var want = W < 760 ? 9 : 16;
-    while (fall.length < want) fall.push(makeFall(false));
-    fall.length = want;
-    narrow = W < 900;
-    if (!slots.length) buildSeats();
-    measure();
-  }
-
-  function lean(x, y){
-    var dx = x - CX, dy = y - (TOP + MIDY);
-    return { x: CX + dx*CT - dy*ST, y: TOP + MIDY + dx*ST + dy*CT };
-  }
-  function axisY(t){ return TOP + MIDY - LEN/2 + t*LEN; }
-  function seatPos(s){
-    var ang = s.t*TURNS*6.2832 + phase + (s.side ? Math.PI : 0);
-    var rr = RAD + s.or;
-    var z = Math.cos(ang)*rr + s.oz, k = FOCAL/(FOCAL + z);
-    var q = lean(CX + Math.sin(ang)*rr*k, axisY(s.t) + s.oy);
-    return { x: q.x, y: q.y, k: k, z: z };
-  }
-
-  function byZ(m,n){ return m.z - n.z; }
   function freeSeat(){
-    for (var i=0;i<slots.length;i++) if (!slots[i].filled && !slots[i].claimed) return i;
+    for (var i=0;i<beads.length;i++) if (!beads[i].filled && !beads[i].claimed && !beads[i].stray) return i;
     return -1;
   }
 
   function drawHelix(){
-    if (!stage) return;
+    hctx.clearRect(0,0,SW,SH);
+    /* the two backbones, faint, drawn behind the spheres */
     for (var side=0; side<2; side++){
-      ctx.beginPath();
-      for (var i=0;i<=96;i++){
-        var t = i/96, ang = t*TURNS*6.2832 + phase + (side ? Math.PI : 0);
-        var z = Math.cos(ang)*RAD, k = FOCAL/(FOCAL + z);
-        var q = lean(CX + Math.sin(ang)*RAD*k, axisY(t));
-        i ? ctx.lineTo(q.x,q.y) : ctx.moveTo(q.x,q.y);
+      hctx.beginPath();
+      for (var i=0;i<=120;i++){
+        var q = pointAt(i/120, side, null);
+        i ? hctx.lineTo(q.x,q.y) : hctx.moveTo(q.x,q.y);
       }
-      ctx.globalAlpha = .12; ctx.lineWidth = 1.4; ctx.strokeStyle = "rgba(170,86,20,.7)"; ctx.stroke();
+      hctx.globalAlpha = .16; hctx.lineWidth = 2.4; hctx.strokeStyle = "rgba(176,88,20,.8)"; hctx.stroke();
     }
-    ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(150,74,16,.85)";
-    for (var p=0;p+1<slots.length;p+=90){
-      if (!slots[p].filled && !slots[p+1].filled) continue;
-      var a = seatPos(slots[p]), b = seatPos(slots[p+1]);
-      ctx.globalAlpha = Math.max(.07, .32*((a.k + b.k)/2 - .78));
-      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    /* base pairs across the middle of the structure */
+    hctx.lineWidth = 2.2;
+    for (var b=0;b<=26;b++){
+      var t = b/26, a = pointAt(t, 0, null), c2 = pointAt(t, 1, null);
+      var kk = (a.k + c2.k)/2;
+      hctx.globalAlpha = Math.max(.05, (kk - .82)*.9);
+      hctx.strokeStyle = "rgba(158,78,16,.85)";
+      hctx.beginPath(); hctx.moveTo(a.x,a.y); hctx.lineTo(c2.x,c2.y); hctx.stroke();
     }
+    /* spheres, far to near */
     var n = 0;
-    for (var s=0;s<slots.length;s++){
-      if (!slots[s].filled) continue;
-      var pos = seatPos(slots[s]);
-      var rec = buf[n] || (buf[n] = { x:0, y:0, k:0, z:0, r:0 });
-      rec.x = pos.x; rec.y = pos.y; rec.k = pos.k; rec.z = pos.z; rec.r = slots[s].r;
+    for (var s=0;s<beads.length;s++){
+      var bd = beads[s]; if (!bd.filled) continue;
+      var p = pointAt(bd.t, bd.side, bd.off);
+      var rec = buf[n] || (buf[n] = { x:0,y:0,k:0,z:0,r:0,st:false });
+      rec.x = p.x; rec.y = p.y; rec.k = p.k; rec.z = p.z; rec.r = bd.r; rec.st = !!bd.stray;
       n++;
     }
     var view = buf.length === n ? buf : buf.slice(0, n);
     view.sort(byZ);
     for (var v=0;v<n;v++){
       var it = view[v];
-      bead(it.x, it.y, it.r*it.k, Math.max(.3, Math.min(1, it.k*it.k)));
+      var a2 = Math.max(.14, Math.min(1, (it.k - .72)*2.6));
+      sphere(hctx, it.x, it.y, it.r*it.k, it.st ? a2*.55 : a2);
     }
+    hctx.globalAlpha = 1;
+  }
+  function byZ(m,n){ return m.z - n.z; }
+
+  /* ---- sizing ---- */
+  function measure(){
+    var sr = band.getBoundingClientRect();
+    docTop = sr.top + (window.pageYOffset||0); docLeft = sr.left + (window.pageXOffset||0);
+    SW = Math.max(1, Math.round(sr.width)); SH = Math.max(1, Math.round(sr.height));
+    hx.width = Math.round(SW*dpr); hx.height = Math.round(SH*dpr);
+    hx.style.width = SW + "px"; hx.style.height = SH + "px";
+    hctx.setTransform(dpr,0,0,dpr,0,0);
+    geometry();
+    track();
+  }
+  function track(){
+    secTop = docTop - (window.pageYOffset||0);
+    secLeft = docLeft - (window.pageXOffset||0);
+  }
+  function resize(){
+    dpr = Math.min(window.innerWidth < 760 ? 1.4 : 1.75, window.devicePixelRatio || 1);
+    W = window.innerWidth; H = window.innerHeight;
+    sky.width = Math.round(W*dpr); sky.height = Math.round(H*dpr);
+    sky.style.width = W + "px"; sky.style.height = H + "px";
+    sctx.setTransform(dpr,0,0,dpr,0,0);
+    buildSprites();
+    var want = W < 760 ? 9 : 16;
+    while (fall.length < want) fall.push(makeFall(false));
+    fall.length = want;
+    measure();
+    if (!beads.length) buildBeads();
   }
 
   function step(){
     raf = 0; if (!running) return;
-    ctx.clearRect(0,0,W,H);
     phase += SPIN;
-    if (stage){ track(); if ((++tick & 63) === 0) measure(); }   /* re-measure about once a second */
-    var onScreen = !!stage && TOP < H + 100 && TOP + HH > -100;
-    var past = !!stage && (TOP + HH) < 0;   /* the helix is the end of the fall, so nothing below it */
+    track(); if ((++tick & 63) === 0) measure();
+    var onScreen = secTop < H + 80 && secTop + SH > -80;
+    var past = (secTop + SH) < 0;
 
+    sctx.clearRect(0,0,W,H);
     for (var i=0;i<fall.length;i++){
       var p = fall[i];
       if (p.seat >= 0){
-        var s = slots[p.seat];
-        if (!onScreen){ s.claimed = false; p.seat = -1; p.al = .4; continue; }
-        var pos = seatPos(s);
-        p.grab += .035;
+        var bd = beads[p.seat];
+        if (!onScreen){ bd.claimed = false; p.seat = -1; continue; }
+        var q = pointAt(bd.t, bd.side, bd.off);
+        var tx = secLeft + q.x, ty = secTop + q.y;
+        p.grab += .034;
         var e = p.grab < 1 ? p.grab*p.grab*(3-2*p.grab) : 1;
-        p.x += (pos.x - p.x)*(.07 + .15*e);
-        p.y += (pos.y - p.y)*(.07 + .15*e);
-        p.a += p.spin*(1-e);
-        p.al = .45 + .45*e;
-        if (e >= 1 && Math.abs(p.x-pos.x) < 2.5 && Math.abs(p.y-pos.y) < 2.5){
-          s.filled = true; s.claimed = false; s.life = 0;
-          fall[i] = makeFall(true);
-          continue;
+        p.x += (tx - p.x)*(.07 + .15*e); p.y += (ty - p.y)*(.07 + .15*e);
+        p.a += p.spin*(1-e); p.al = .45 + .45*(1-e);
+        if (e >= 1 && Math.abs(p.x-tx) < 3 && Math.abs(p.y-ty) < 3){
+          bd.filled = true; bd.claimed = false; bd.life = 0;
+          fall[i] = makeFall(true); continue;
         }
-        petal(p);
-        continue;
+        petal(p); continue;
       }
-      if (past) continue;                       /* scrolled below the helix: the air is clear */
+      if (past) continue;
       p.y += p.vy; p.ph += .01; p.a += p.spin; p.x += Math.cos(p.ph)*.35;
-      if (onScreen && p.y > TOP - H*0.45 && p.y < TOP + HH){
+      if (onScreen && p.y > secTop - H*0.4 && p.y < secTop + SH){
         var fs = freeSeat();
-        if (fs >= 0){ p.seat = fs; slots[fs].claimed = true; p.grab = 0; }
+        if (fs >= 0){ p.seat = fs; beads[fs].claimed = true; p.grab = 0; }
       }
-      if (onScreen && p.y > TOP + HH - 12){     /* every seat taken: absorb it rather than let it pass */
+      if (onScreen && p.y > secTop + SH - 12){
         p.al -= .03;
         if (p.al <= 0){ fall[i] = makeFall(true); continue; }
       }
@@ -731,15 +749,14 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
     }
 
     if (onScreen){
-      for (var k=0;k<slots.length;k++){
-        var sl = slots[k];
-        if (!sl.filled) continue;
-        sl.life += .016;
-        if (sl.life > 18 && Math.random() < .00014){ sl.filled = false; sl.life = 0; }
+      for (var k=0;k<beads.length;k++){
+        var bb = beads[k];
+        if (!bb.filled || bb.stray) continue;
+        bb.life += .016;
+        if (bb.life > 20 && Math.random() < .0004){ bb.filled = false; bb.life = 0; }
       }
       drawHelix();
     }
-    ctx.globalAlpha = 1;
     raf = requestAnimationFrame(step);
   }
 
@@ -749,8 +766,8 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   var reducedQ = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches;
   resize();
   if (reducedQ){
-    for (var z=0;z<slots.length;z++) slots[z].filled = true;
-    measure(); ctx.clearRect(0,0,W,H); drawHelix();
+    for (var z=0;z<beads.length;z++) beads[z].filled = true;
+    drawHelix();
     return;
   }
   var rt = 0;
