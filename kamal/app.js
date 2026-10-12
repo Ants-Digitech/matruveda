@@ -523,136 +523,213 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   mark();
 })();
 
-/* ---------- science section: petals fall, then build a helix whose rungs carry the rows ---------- */
+/* ---------- petals fall the length of the page and build a turning helix ---------- */
 (function(){
-  var sec = document.querySelector("[data-sci]"); if (!sec) return;
-  var cv = sec.querySelector("[data-scicanvas]"), stage = sec.querySelector("[data-scistage]");
-  if (!cv || !stage) return;
-  var ctx = cv.getContext("2d"), W = 0, H = 0, dpr = 1, petals = [], rungs = [], raf = 0, prog = 0, running = false;
-  var TURNS = 2.2, AMP = 0, CX = 0, TOP = 0, HH = 0, WIDE = true;
-  var COLORS = ["rgba(224,122,31,.86)","rgba(242,162,76,.78)","rgba(201,162,74,.7)","rgba(184,92,18,.74)"];
+  var cv = document.querySelector("[data-petalfall]"); if (!cv) return;
+  var sec = document.querySelector("[data-sci]"), stage = sec && sec.querySelector("[data-scistage]");
+  var ctx = cv.getContext("2d");
+  var W = 0, H = 0, dpr = 1, raf = 0, running = false, narrow = false;
+  var fall = [], slots = [], sprites = [], rungT = [];
+  var phase = 0, SPIN = 0.0024, TURNS = 2.6, FOCAL = 780;
+  var CX = 0, TOP = 0, HH = 0, RAD = 0, GUTL = 0, GUTR = 0;
 
   function rnd(a,b){ return a + Math.random()*(b-a); }
-  function strandX(t, side){ return CX + Math.sin(t*TURNS*Math.PI*2 + (side ? Math.PI : 0))*AMP; }
-  function depth(t, side){ return 0.6 + 0.4*(0.5 + 0.5*Math.cos(t*TURNS*Math.PI*2 + (side ? Math.PI : 0))); }
 
-  function make(i){
-    return { x: rnd(0,W), y: rnd(-H*0.6, H), r: rnd(6,11), vy: rnd(.35,.95), sway: rnd(14,40),
-             ph: rnd(0,Math.PI*2), a: rnd(0,Math.PI*2), spin: rnd(-.015,.015),
-             c: COLORS[i % COLORS.length], t: 0, side: i % 2, anchor: false };
-  }
-
-  /* the five rows are the five rungs: read their offsets once, not every frame */
-  function measure(){
-    var cr = cv.getBoundingClientRect(), sr = stage.getBoundingClientRect();
-    CX = sr.left - cr.left + sr.width/2;
-    TOP = sr.top - cr.top; HH = sr.height;
-    AMP = Math.min(sr.width*0.46, 150);
-    rungs.length = 0;
-    var rows = sec.querySelectorAll(".scicol.left li");
-    WIDE = W >= 900;
-    if (WIDE){
-      /* each rung sits level with its pair of cards, so the helix reads as the diagram it is */
-      for (var i=0;i<rows.length;i++){
-        var rr = rows[i].getBoundingClientRect();
-        var y = rr.top - cr.top + rr.height/2;
-        rungs.push({ y: y, t: HH ? Math.max(0, Math.min(1, (y - TOP)/HH)) : 0 });
-      }
-    } else {
-      /* narrow: the cards stack below the helix, so space the rungs evenly inside it instead */
-      var n = Math.max(1, rows.length);
-      for (var j=0;j<n;j++){ var t2 = (j + 0.5)/n; rungs.push({ y: TOP + t2*HH, t: t2 }); }
-    }
-    /* two petals are pinned to each rung end, the rest fill the backbone */
-    var need = rungs.length*2;
-    var n = W < 900 ? need + 26 : Math.max(need + 18, Math.min(86, Math.round(W/15)));
-    while (petals.length < n) petals.push(make(petals.length));
-    petals.length = n;
-    for (var k=0;k<petals.length;k++){
-      var p = petals[k];
-      if (k < need){ var ri = k >> 1; p.anchor = true; p.t = rungs[ri].t; p.side = k & 1; p.rung = ri; p.r = 11; }
-      else { p.anchor = false; p.rung = -1; p.t = (k - need + 0.5)/(petals.length - need); p.side = k & 1; }
+  /* ---- one glossy bead per size bucket, drawn once, then only blitted ---- */
+  var BUCKETS = 14, RMIN = 3, RMAX = 14;
+  function buildSprites(){
+    sprites.length = 0;
+    for (var i=0;i<BUCKETS;i++){
+      var r = RMIN + (RMAX - RMIN)*i/(BUCKETS-1);
+      var pad = Math.ceil(r*2.1), s = pad*2;
+      var c = document.createElement("canvas");
+      c.width = Math.ceil(s*dpr); c.height = Math.ceil(s*dpr);
+      var g = c.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
+      var halo = g.createRadialGradient(pad, pad, r*0.75, pad, pad, r*2.0);
+      halo.addColorStop(0, "rgba(232,140,46,.30)");
+      halo.addColorStop(1, "rgba(232,140,46,0)");
+      g.fillStyle = halo; g.beginPath(); g.arc(pad, pad, r*2.0, 0, 6.2832); g.fill();
+      var body = g.createRadialGradient(pad - r*0.38, pad - r*0.42, r*0.08, pad, pad, r);
+      body.addColorStop(0,    "rgba(255,241,214,1)");
+      body.addColorStop(0.22, "rgba(250,200,124,1)");
+      body.addColorStop(0.55, "rgba(233,126,30,1)");
+      body.addColorStop(0.86, "rgba(190,84,14,1)");
+      body.addColorStop(1,    "rgba(140,57,8,1)");
+      g.fillStyle = body; g.beginPath(); g.arc(pad, pad, r, 0, 6.2832); g.fill();
+      g.globalAlpha = .5; g.fillStyle = "#fff";
+      g.beginPath(); g.ellipse(pad - r*0.34, pad - r*0.40, r*0.26, r*0.16, -0.6, 0, 6.2832); g.fill();
+      sprites.push({ c: c, pad: pad });
     }
   }
-
-  function resize(){
-    dpr = Math.min(2, window.devicePixelRatio || 1);
-    var r = cv.getBoundingClientRect();
-    W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
-    cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    measure();
+  function bead(x, y, r, alpha){
+    var i = Math.round((r - RMIN)/(RMAX - RMIN)*(BUCKETS-1));
+    if (i < 0) i = 0; else if (i > BUCKETS-1) i = BUCKETS-1;
+    var sp = sprites[i], d = sp.pad*2;
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(sp.c, x - sp.pad, y - sp.pad, d, d);
   }
 
-  function petal(x, y, r, a, c, alpha){
-    ctx.save(); ctx.translate(x,y); ctx.rotate(a); ctx.globalAlpha = alpha; ctx.fillStyle = c;
+  var PCOL = ["rgba(224,122,31,.55)","rgba(242,162,76,.5)","rgba(201,162,74,.45)","rgba(184,92,18,.5)"];
+  function petal(p){
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
+    ctx.globalAlpha = p.al; ctx.fillStyle = p.c;
+    var r = p.r;
     ctx.beginPath(); ctx.moveTo(0,-r);
     ctx.bezierCurveTo(r*.92,-r*.52, r*.78, r*.52, 0, r);
     ctx.bezierCurveTo(-r*.78, r*.52, -r*.92,-r*.52, 0,-r);
     ctx.closePath(); ctx.fill(); ctx.restore();
   }
+  function makeFall(fromTop){
+    return { x: rnd(0, W), y: fromTop ? rnd(-H*0.45, -12) : rnd(-H*0.4, H),
+             r: rnd(4.5, 9.5), vy: rnd(.55, 1.3), a: rnd(0, 6.283), spin: rnd(-.016, .016),
+             ph: rnd(0, 6.283), al: rnd(.3, .55), c: PCOL[(Math.random()*PCOL.length)|0],
+             seat: -1, grab: 0 };
+  }
 
-  function backbone(){
-    if (prog < .3) return;
-    var a = (prog-.3)/.7;
-    ctx.save(); ctx.lineWidth = 1.6;
+  function measure(){
+    narrow = W < 900;
+    if (!stage) return;
+    var sr = stage.getBoundingClientRect();
+    CX = sr.left + sr.width/2; TOP = sr.top; HH = sr.height;
+    RAD = Math.min(sr.width*0.44, narrow ? 116 : 158);
+    var lc = sec.querySelector(".scicol.left"), rc = sec.querySelector(".scicol.right");
+    GUTL = lc ? lc.getBoundingClientRect().right + 8 : 0;
+    GUTR = rc ? rc.getBoundingClientRect().left - 8 : W;
+    rungT.length = 0;
+    var rows = sec.querySelectorAll(".scicol.left li");
+    for (var i=0;i<rows.length;i++){
+      if (narrow) rungT.push((i + 0.5)/rows.length);
+      else { var rr = rows[i].getBoundingClientRect();
+             rungT.push(HH ? Math.max(0, Math.min(1, (rr.top + rr.height/2 - TOP)/HH)) : 0); }
+    }
+  }
+
+  function buildSeats(){
+    var n = narrow ? 58 : 98;
+    slots.length = 0;
+    for (var i=0;i<n;i++){
+      slots.push({ t: i/(n-1), side: i & 1, filled: Math.random() < .74,
+                   claimed: false, life: rnd(0, 20), r: rnd(7, 13) });
+    }
+  }
+
+  function resize(){
+    dpr = Math.min(window.innerWidth < 760 ? 1.4 : 1.75, window.devicePixelRatio || 1);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+    cv.style.width = W + "px"; cv.style.height = H + "px";
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    buildSprites();
+    var want = W < 760 ? 28 : 48;
+    while (fall.length < want) fall.push(makeFall(false));
+    fall.length = want;
+    narrow = W < 900;
+    if (!slots.length) buildSeats();
+    measure();
+  }
+
+  function seatPos(s){
+    var ang = s.t*TURNS*6.2832 + phase + (s.side ? Math.PI : 0);
+    var z = Math.cos(ang)*RAD, k = FOCAL/(FOCAL + z);
+    return { x: CX + Math.sin(ang)*RAD*k, y: TOP + s.t*HH, k: k, z: z };
+  }
+
+  function freeSeat(){
+    for (var i=0;i<slots.length;i++) if (!slots[i].filled && !slots[i].claimed) return i;
+    return -1;
+  }
+
+  function drawHelix(){
+    if (!stage) return;
     for (var side=0; side<2; side++){
-      ctx.globalAlpha = a*0.38; ctx.strokeStyle = side ? "rgba(90,58,34,.65)" : "rgba(184,92,18,.65)";
       ctx.beginPath();
-      for (var i=0;i<=60;i++){ var t = i/60, x = strandX(t, side), y = TOP + t*HH;
-        i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); }
-      ctx.stroke();
-    }
-    /* each rung joins a pair and runs out towards its two cards */
-    ctx.globalAlpha = a*0.55; ctx.strokeStyle = "rgba(90,58,34,.6)"; ctx.lineWidth = 1.3;
-    for (var k=0;k<rungs.length;k++){
-      var rg = rungs[k], x1 = strandX(rg.t,0), x2 = strandX(rg.t,1);
-      ctx.beginPath(); ctx.moveTo(Math.min(x1,x2), rg.y); ctx.lineTo(Math.max(x1,x2), rg.y); ctx.stroke();
-      if (WIDE){
-        ctx.save(); ctx.globalAlpha = a*0.32; ctx.setLineDash([3,5]);
-        ctx.beginPath(); ctx.moveTo(Math.min(x1,x2), rg.y); ctx.lineTo(0, rg.y);
-        ctx.moveTo(Math.max(x1,x2), rg.y); ctx.lineTo(W, rg.y); ctx.stroke();
-        ctx.restore();
+      for (var i=0;i<=72;i++){
+        var t = i/72, ang = t*TURNS*6.2832 + phase + (side ? Math.PI : 0);
+        var z = Math.cos(ang)*RAD, k = FOCAL/(FOCAL + z);
+        var x = CX + Math.sin(ang)*RAD*k, y = TOP + t*HH;
+        i ? ctx.lineTo(x,y) : ctx.moveTo(x,y);
       }
+      ctx.globalAlpha = .2; ctx.lineWidth = 2; ctx.strokeStyle = "rgba(170,86,20,.75)"; ctx.stroke();
     }
-    ctx.restore();
-  }
-
-  function progress(){
-    var r = sec.getBoundingClientRect(), vh = window.innerHeight || 800;
-    if (r.bottom < 0 || r.top > vh) return 0;
-    return Math.max(0, Math.min(1, (vh - r.top) / (vh*0.72)));
-  }
-
-  function place(){
-    /* the section moves under the scroll, so re-anchor to it without touching the row rects */
-    var cr = cv.getBoundingClientRect(), sr = stage.getBoundingClientRect();
-    var dy = (sr.top - cr.top) - TOP;
-    if (Math.abs(dy) > 0.5){ TOP = sr.top - cr.top; for (var i=0;i<rungs.length;i++) rungs[i].y += dy; }
+    ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(150,74,16,.85)";
+    for (var p=0;p+1<slots.length;p+=2){
+      if (!slots[p].filled && !slots[p+1].filled) continue;
+      var a = seatPos(slots[p]), b = seatPos(slots[p+1]);
+      ctx.globalAlpha = Math.max(.07, .32*((a.k + b.k)/2 - .78));
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    }
+    if (!narrow){
+      ctx.save(); ctx.setLineDash([3,6]); ctx.globalAlpha = .18; ctx.strokeStyle = "rgba(120,70,30,.9)";
+      for (var q=0;q<rungT.length;q++){
+        var y = TOP + rungT[q]*HH;
+        /* stay in the gutter: these must never run across the card text */
+        var lx = CX - RAD - 12, rx = CX + RAD + 12;
+        ctx.beginPath();
+        if (lx > GUTL){ ctx.moveTo(lx, y); ctx.lineTo(GUTL, y); }
+        if (rx < GUTR){ ctx.moveTo(rx, y); ctx.lineTo(GUTR, y); }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    var vis = [];
+    for (var s=0;s<slots.length;s++){
+      if (!slots[s].filled) continue;
+      var pos = seatPos(slots[s]);
+      vis.push({ x: pos.x, y: pos.y, k: pos.k, z: pos.z, r: slots[s].r });
+    }
+    vis.sort(function(m,n){ return m.z - n.z; });
+    for (var v=0;v<vis.length;v++){
+      var it = vis[v];
+      bead(it.x, it.y, it.r*it.k, Math.max(.3, Math.min(1, it.k*it.k)));
+    }
   }
 
   function step(){
     raf = 0; if (!running) return;
-    prog = progress();
-    if (prog > 0) place();
     ctx.clearRect(0,0,W,H);
-    backbone();
-    for (var i=0;i<petals.length;i++){
-      var p = petals[i];
-      var ty = p.anchor ? rungs[p.rung].y : TOP + p.t*HH;
-      var tx = strandX(p.t, p.side);
-      var ta = p.t*TURNS*Math.PI*2*0.35;
-      if (prog <= 0.02){
-        p.y += p.vy; p.ph += .01; p.a += p.spin; p.x += Math.cos(p.ph)*.3;
-        if (p.y > H+30){ p.y = -20; p.x = rnd(0,W); }
-      } else {
-        var k = 0.05 + 0.22*prog;
-        p.x += (tx - p.x)*k; p.y += (ty - p.y)*k; p.a += (ta - p.a)*k*0.5; p.ph += .006;
-        if (prog < 1){ p.x += Math.cos(p.ph)*(1-prog)*0.6; p.y += p.vy*(1-prog)*0.7; }
+    phase += SPIN;
+    if (stage) measure();
+    var onScreen = !!stage && TOP < H + 100 && TOP + HH > -100;
+
+    for (var i=0;i<fall.length;i++){
+      var p = fall[i];
+      if (p.seat >= 0){
+        var s = slots[p.seat];
+        if (!onScreen){ s.claimed = false; p.seat = -1; p.al = .4; continue; }
+        var pos = seatPos(s);
+        p.grab += .035;
+        var e = p.grab < 1 ? p.grab*p.grab*(3-2*p.grab) : 1;
+        p.x += (pos.x - p.x)*(.07 + .15*e);
+        p.y += (pos.y - p.y)*(.07 + .15*e);
+        p.a += p.spin*(1-e);
+        p.al = .45 + .45*e;
+        if (e >= 1 && Math.abs(p.x-pos.x) < 2.5 && Math.abs(p.y-pos.y) < 2.5){
+          s.filled = true; s.claimed = false; s.life = 0;
+          fall[i] = makeFall(true);
+          continue;
+        }
+        petal(p);
+        continue;
       }
-      var d = depth(p.t, p.side), sc = 1 + (d - 1)*prog;
-      petal(p.x, p.y, p.r*sc, p.a, p.c, (p.anchor ? 0.72 : 0.45) + 0.28*prog*d);
+      p.y += p.vy; p.ph += .01; p.a += p.spin; p.x += Math.cos(p.ph)*.35;
+      if (onScreen && p.y > TOP - H*0.4 && p.y < TOP + HH){
+        var fs = freeSeat();
+        if (fs >= 0){ p.seat = fs; slots[fs].claimed = true; p.grab = 0; }
+      }
+      if (p.y > H + 26){ fall[i] = makeFall(true); continue; }
+      petal(p);
     }
+
+    if (onScreen){
+      for (var k=0;k<slots.length;k++){
+        var sl = slots[k];
+        if (!sl.filled) continue;
+        sl.life += .016;
+        if (sl.life > 18 && Math.random() < .0016){ sl.filled = false; sl.life = 0; }
+      }
+      drawHelix();
+    }
+    ctx.globalAlpha = 1;
     raf = requestAnimationFrame(step);
   }
 
@@ -662,18 +739,13 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   var reducedQ = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches;
   resize();
   if (reducedQ){
-    prog = 1; ctx.clearRect(0,0,W,H); backbone();
-    for (var j=0;j<petals.length;j++){ var q = petals[j];
-      q.x = strandX(q.t, q.side); q.y = q.anchor ? rungs[q.rung].y : TOP + q.t*HH;
-      petal(q.x, q.y, q.r*depth(q.t,q.side), q.t*2, q.c, .9); }
+    for (var z=0;z<slots.length;z++) slots[z].filled = true;
+    measure(); ctx.clearRect(0,0,W,H); drawHelix();
     return;
   }
-  if ("IntersectionObserver" in window){
-    new IntersectionObserver(function(es){ es.forEach(function(e){ e.isIntersecting ? start() : stop(); }); },
-      { rootMargin: "250px 0px" }).observe(sec);
-  } else start();
   var rt = 0;
   window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(resize, 160); }, { passive: true });
   document.addEventListener("visibilitychange", function(){ document.hidden ? stop() : start(); });
+  start();
 })();
 
