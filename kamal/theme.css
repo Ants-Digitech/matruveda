@@ -1030,42 +1030,192 @@ small{opacity:1}
      The fixed bottom bar already carries Book your seat and WhatsApp. */
   .totop{display:none}
 
-  /* the journey page lost its stage map: the rail was sticky at 1280 but static at 390.
-     Turning the grid into a block gives the rail a tall containing block to stick inside. */
+  /* ================= 1. swipe carousels =================
+     app.js adds .mcar to a repeated block and appends .mcarnav under it.
+     The track bleeds to both screen edges so a slide reads as a card you push
+     aside, not as a column that happens to be cut off. */
+  .mcar{display:flex!important;flex-wrap:nowrap!important;gap:12px;
+        overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;
+        -webkit-overflow-scrolling:touch;scrollbar-width:none;
+        margin:0 -16px;padding:2px 16px 6px;
+        grid-template-columns:none!important}
+  .mcar::-webkit-scrollbar{display:none}
+  .mcar>*{flex:0 0 min(84vw,340px);scroll-snap-align:center;margin:0!important;
+          min-width:0;max-width:none}
+
+  /* a slide has to read as a card, whatever it was on a wide screen */
+  .mcar.cardify>*{background:var(--panel);border:1px solid var(--line);
+                  border-radius:var(--r,18px);padding:16px 16px 18px;
+                  box-shadow:0 20px 34px -30px rgba(62,38,21,.8)}
+
+  /* six dots and two arrows at 44x44 come to 352px. The nav reaches past the
+     wrap's 16px gutters so they stay 44 wide instead of being squeezed to 43. */
+  .mcarnav{display:flex;align-items:center;justify-content:center;gap:0;
+           margin:12px -14px 0}
+  .mcarnav .mcd{flex:0 0 44px;width:44px;height:44px;border:0;background:none;padding:0;
+                cursor:pointer;display:grid;place-items:center}
+  .mcarnav .mcd::before{content:"";width:8px;height:8px;border-radius:50%;
+                        background:var(--line);transition:background .25s,transform .25s}
+  .mcarnav .mcd.on::before{background:var(--acc);transform:scale(1.5)}
+  .mcarnav .mcarrow{flex:0 0 44px;width:44px;height:44px;border:1px solid var(--line);border-radius:50%;
+                    background:var(--panel);color:var(--struct);display:grid;place-items:center;
+                    cursor:pointer;padding:0}
+  .mcarnav .mcarrow svg{width:19px;height:19px}
+  .mcarnav .mcarrow[disabled]{opacity:.3}
+  .mcarlab{display:block;text-align:center;margin:8px 0 0;font-size:.82rem;color:var(--muted)}
+  .mcarlab b{color:var(--struct);font-weight:600}
+
+  /* ================= 2. a bullet is a bullet =================
+     Every one of these lists printed each line inside its own bordered box.
+     On a 390px screen that is 26px of chrome for 20px of text, four times per
+     card, six cards per page. */
+  .focus li,.fmt li,.slist li,.pben span,.scard .svlist li,.benlist li,.ulist li{
+      background:none!important;border:0!important;border-radius:0!important;
+      padding:0 0 0 17px!important;box-shadow:none!important;position:relative;
+      margin:0 0 7px!important;font-size:.93rem;line-height:1.46}
+  .focus li::before,.fmt li::before,.slist li::before,.pben span::before,
+  .scard .svlist li::before,.benlist li::before,.ulist li::before{
+      content:"";position:absolute;left:1px;top:.62em;width:6px;height:6px;
+      border-radius:50%;background:var(--acc);opacity:.85}
+  .focus li::marker,.fmt li::marker,.slist li::marker{content:""}
+  .focus,.fmt,.slist,.scard .svlist,.benlist,.ulist{gap:0!important;display:block!important}
+  .pben{gap:0!important}
+
+  /* the same thinking for the reason cards on the about page: a bordered box per
+     reason made the page look generated and invited skipping past it */
+  .wgrid{display:block!important}
+  .wgrid .wcard{background:none;border:0;border-radius:0;box-shadow:none;padding:0 0 0 15px;
+                margin:0 0 16px;border-left:2px solid var(--line);position:relative}
+  .wgrid .wcard .icw{display:none}
+  .wgrid .wcard h3{font-size:1.02rem;margin:0 0 3px}
+  .wgrid .wcard p{font-size:.93rem;line-height:1.5;margin:0}
+
+  /* ================= 3. the journey, five slides =================
+     5172px of stacked chapters became one swipe per stage. */
   .jtl .jgrid{display:block}
-  .jside{position:sticky;top:78px;z-index:40;display:grid;grid-template-columns:70px 1fr;align-items:center;
-         gap:12px;margin:0 0 18px;padding:8px 14px;background:var(--bg2);border:1px solid var(--line);
-         border-radius:14px;box-shadow:0 14px 22px -20px rgba(62,38,21,.75)}
-  .jside .jlotus{width:70px;margin:0}
-  .jside .jlotus svg,.jside .jlotus img{display:block;width:100%;height:auto}
-  .jcap{margin:0;text-align:left;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
-  .jcap b{font-size:1.05rem}
-  .jcap small{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accT);font-weight:700}
+  .jtl .jside{display:none}                 /* the carousel label names the stage now */
+  .jchapters.mcar>.chapter{border-top:0;padding:14px 15px 16px}
+  .chapter .chimg{height:150px;object-fit:cover;width:100%;border-radius:12px;margin:0 0 10px}
+  .chapter h2{font-size:1.5rem;margin:2px 0 1px}
+  .chapter .enbig{font-size:.86rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accT);
+                  font-weight:700;margin:0 0 5px}
+  .chapter .who{display:none}               /* the same line on all five slides */
+  .chapter .lead{font-size:.95rem;margin:0 0 10px}
+  .chapter .two{display:block;margin:0 0 10px}
+  .chapter .two>div+div{margin-top:10px}
+  .chapter .focus-h{font-size:.68rem;letter-spacing:.11em;margin:0 0 5px}
+  .chapter .actions{gap:8px;margin:0}
+  .chapter .actions .btn{padding:10px 16px;font-size:.92rem}
+  /* the fixed bottom bar already carries Book your seat on every screen */
+  .jchapters.mcar .actions .btn:not(.ghost){display:none}
 
-  /* the service photograph was locked at 140x140 inside a 304px column, filling 41% of the
-     card and leaving 164px of dead space beside it */
+  /* ================= 4. the six other programs =================
+     4307px of stacked cards became six slides. */
+  .services.full .sgrid.mcar>.scard{display:block;padding:0 0 16px;overflow:hidden}
+  .services.full .sgrid.mcar .svimg{width:100%;height:170px;border-radius:0;margin:0 0 12px}
+  .services.full .sgrid.mcar>.scard>div{padding:0 15px}
   .services.full .svimg{width:100%;height:180px}
+  .scard h3{font-size:1.06rem}
+  .scard .enline{font-size:.96rem;letter-spacing:.06em}
 
-  /* the picker printed all five programmes in full, about 1450px.
-     Only the stage you are actually in keeps its detail. */
+  /* ================= 5. the home page picker =================
+     five programme cards, 1120px, when only one of them is your stage */
+  /* this track sits inside the picker's own padded box, so it must not bleed */
+  .pcards.mcar{margin:0;padding:2px 0 6px}
+  .pcards.mcar>.pcard{flex-basis:100%;padding:14px 15px}
   .pcard.next .pben{display:none}
   .pcard.now .pben{display:grid}
+  .pcards.mcar .pcard .pben{display:grid}   /* in a carousel every slide earns its detail */
   .pcard{padding:13px 15px}
 
-  /* the other-stages strip was 1173px of full cards for what is a set of links */
+  /* ================= 6. the rest of the home page ================= */
+  /* four facts, one per row, was 375px of mostly air */
+  .fees{grid-template-columns:1fr 1fr!important;gap:10px}
+  .fees>div{padding:11px 13px}
+  .fees b{font-size:1rem;line-height:1.25}
+  .fees small{font-size:.76rem}
+  /* the practice tabs were five 75px rows before the widget even started */
+  .ptabs{display:flex!important;flex-wrap:nowrap;overflow-x:auto;gap:8px;
+         scrollbar-width:none;margin:0 -16px;padding:2px 16px 6px}
+  .ptabs::-webkit-scrollbar{display:none}
+  .ptabs button{flex:0 0 auto;display:flex;align-items:center;gap:7px;padding:9px 14px;
+                border-radius:999px;min-height:44px;white-space:nowrap}
+  .ptabs button small{display:none}
+  .ptabs button .icw{margin:0}
+  .plist2{display:block}
+  .plist2 .more{margin-top:10px}
+  .anytime .hd.withphoto .welcome{height:170px;aspect-ratio:auto;object-fit:cover}
+  .anytime .hd.withphoto .sub{margin-bottom:0}
+  /* five month buttons wrapped to three rows; one scrollable row answers the question */
+  .popts{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -15px;padding:2px 15px 6px}
+  .popts::-webkit-scrollbar{display:none}
+  .popts button{flex:0 0 auto;white-space:nowrap}
+  /* three identical "video coming soon" boxes, 192px each, with no video behind
+     any of them. One box carries the idea; the other two keep their captions so
+     you still know what is coming. */
+  .vgrid .vframe:not(.big) .vbox{display:none}
+  .vgrid .vframe:not(.big){border:0;background:none;box-shadow:none;padding:0}
+  .vgrid .vframe:not(.big) figcaption{padding:2px 0 2px 15px;border-left:2px solid var(--line)}
+  /* the two 1fr rows were sized for the wide 2x2 layout and left the caption-only
+     figures stretched to 248px with a vertical rule hanging beside the empty half */
+  .vgrid{grid-template-rows:auto!important;gap:14px}
+
+  /* ================= 7. the founders =================
+     a 380px portrait above 500px of text, twice */
+  /* min-height:300px on .fphoto img, and a four-class selector on .welcome, both
+     beat a plainer rule here. These two are written to out-rank them on purpose. */
+  .fcard .fphoto,.fcard .fphoto img{height:260px;min-height:0;object-fit:cover}
+  .fcard .fphoto img{object-position:center 20%;max-height:260px}
+  /* on the home page this is a teaser, and the about page carries the full version.
+     The credential chips repeat the hero's 25+ and 200+ and the role line below. */
+  .fgrid2 .fc>img{height:170px;object-fit:cover;object-position:center 20%}
+  .fgrid2 .fc .chips3.sm{display:none}
+  .sec.founders>.wrap>.hd>.sub{display:none}
+
+  /* five stage links on a stage page, two to a row */
+  .ostrip{grid-template-columns:1fr 1fr!important}
+  .ostrip .ocard:last-child{grid-column:1/-1}
+
+  /* ================= 8. kept from the 11 Oct pass ================= */
   .ostrip{gap:8px}
   .ocard{padding:10px 14px;gap:1px}
   .ocard b{font-size:1.02rem}
   .ocard .nm{font-size:.95rem}
   .ocard .more{display:none}
-
-  /* 25+ and 200+ already appear in the hero on the home page */
   .sec.why.nostats .stats{display:none}
-
-  /* the belief chain wrapped to two columns and left an arrow hanging at the start of row two */
+  .stats{grid-template-columns:1fr 1fr!important;gap:10px}
+  .stats>div{padding:12px 14px}
+  .stats b{font-size:1.9rem}
   .chain{flex-direction:column;align-items:stretch;gap:22px}
   .chain span{padding:7px 13px}
   .chain span+span::before{content:"\2193";left:50%;top:-19px;transform:translateX(-50%)}
+
+  /* the practices page: five widgets, 3683px stacked, now one swipe each.
+     The chip strip above still jumps straight to one. */
+  /* the slides stretch to the tallest so every card has the same edge, but the
+     content inside each one starts at the top instead of floating in the middle */
+  .practrack.mcar>.practice{flex-basis:min(88vw,348px);padding:15px 15px 18px;
+                            background:var(--panel);border:1px solid var(--line);
+                            border-radius:var(--r,18px);align-content:start}
+  .practrack.mcar .pvis{max-width:260px;margin:0 auto;width:100%}
+  .practrack.mcar .plotus,.practrack.mcar .omwrap{max-width:240px;margin:0 auto}
+  /* the six-line samvad script was 776px on its own and set the height of all five */
+  .practrack.mcar .script{gap:6px}
+  .practrack.mcar .script .line{padding:8px 10px;gap:9px}
+  .practrack.mcar .script .line p{font-size:.92rem;line-height:1.4;margin:0}
+  .practrack.mcar .script .line small{font-size:.76rem;line-height:1.35}
+  .practrack.mcar .script .line .ring{width:22px;flex:0 0 22px}
+  .practrack.mcar .script .line .n{width:26px;height:26px;font-size:.82rem}
+  .practrack.mcar .moves .move{padding:7px 9px}
+
+  /* the practices page keeps all five widgets, but you can hop between them */
+  .pjump{position:sticky;top:64px;z-index:30;display:flex;flex-wrap:nowrap;overflow-x:auto;
+         gap:8px;scrollbar-width:none;margin:0 -16px;
+         padding:8px 16px;background:var(--bg);
+         box-shadow:0 10px 16px -14px rgba(62,38,21,.7)}
+  .pjump::-webkit-scrollbar{display:none}
+  .pjump a{flex:0 0 auto;white-space:nowrap;min-height:44px;display:flex;align-items:center}
+  .pjump a small{display:none}
 }
 
 
