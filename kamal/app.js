@@ -1,5 +1,12 @@
 (function(){
 "use strict";
+/* a section that fails names itself, so the next report says which one */
+function __sectionFailed(name, e){
+  try{ showAll(); }catch(_){}
+  try{ var d = document.documentElement, p = d.getAttribute("data-jserr") || "";
+       d.setAttribute("data-jserr", p + (p ? " | " : "") + name + ": " + ((e && e.message) || e)); }catch(_){}
+  if (window.console) console.error("section failed: " + name, e);
+}
 var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 var hasGsap = typeof gsap !== "undefined";
 var hasST = hasGsap && typeof ScrollTrigger !== "undefined";
@@ -7,7 +14,6 @@ if (hasST) gsap.registerPlugin(ScrollTrigger);
 var isTouch = window.matchMedia && window.matchMedia("(hover:none)").matches;
 function showAll(){ document.querySelectorAll("[data-reveal]").forEach(function(el){ el.style.opacity = 1; el.style.transform = "none"; el.style.visibility = "visible"; }); }
 window.addEventListener("error", showAll);
-try{
 document.documentElement.classList.add("js");
 /* every page starts at the top unless a hash asks otherwise; a back-to-top arrow appears after one screen */
 try{ if ("scrollRestoration" in history) history.scrollRestoration = "manual"; }catch(e){}
@@ -34,6 +40,7 @@ try{ if ("scrollRestoration" in history) history.scrollRestoration = "manual"; }
 (function(){ document.querySelectorAll("[data-open]").forEach(function(b){ b.addEventListener("click", function(){ var d = document.getElementById(b.dataset.open); if (!d) return; if (d.showModal){ d.showModal(); } else { d.setAttribute("open", ""); } document.body.classList.add("modal-open"); }); });
   document.querySelectorAll("dialog.modal").forEach(function(d){ d.addEventListener("click", function(e){ if (e.target === d) d.close(); }); d.querySelectorAll("[data-close]").forEach(function(c){ c.addEventListener("click", function(){ d.close(); }); }); d.addEventListener("close", function(){ document.body.classList.remove("modal-open"); }); }); })();
 
+try{
 /* ---------- nav ---------- */
 var nav = document.querySelector(".nav");
 var onScroll = function(){ if (nav) nav.classList.toggle("scrolled", window.scrollY > 24); };
@@ -44,6 +51,8 @@ if (toggle && links){
   links.addEventListener("click", function(e){ if (e.target.closest("a")){ links.classList.remove("open"); toggle.setAttribute("aria-expanded","false"); document.body.classList.remove("menu-open"); } });
 }
 
+}catch(e){ __sectionFailed("nav", e); }
+try{
 /* ---------- petal particles on a canvas (#petals) ---------- */
 (function(){
   var cv = document.getElementById("petals"); if (!cv || reduced) return;
@@ -58,6 +67,8 @@ if (toggle && links){
   window.addEventListener("resize", resize); resize(); tick();
 })();
 
+}catch(e){ __sectionFailed("petal particles on a canvas (#petals)", e); }
+try{
 /* ---------- stars on a canvas (#stars) ---------- */
 (function(){
   var cv = document.getElementById("stars"); if (!cv || reduced) return;
@@ -69,6 +80,8 @@ if (toggle && links){
   window.addEventListener("resize", resize); resize(); tick();
 })();
 
+}catch(e){ __sectionFailed("stars on a canvas (#stars)", e); }
+try{
 /* ---------- blob morphing (.morph with data-alt1 / data-alt2) + drift ---------- */
 if (hasGsap && !reduced){
   document.querySelectorAll(".morph").forEach(function(path, i){
@@ -78,6 +91,8 @@ if (hasGsap && !reduced){
   gsap.utils.toArray("[data-drift]").forEach(function(el, i){ var a = +el.dataset.drift || 6; gsap.to(el, {yPercent: (i%2?-1:1)*a, xPercent: (i%2?1:-1)*a*.5, duration: 14 + i*3, repeat:-1, yoyo:true, ease:"sine.inOut"}); });
 }
 
+}catch(e){ __sectionFailed("blob morphing (.morph with data-alt1 / data-alt2) + drift", e); }
+try{
 /* ---------- hero entrance (data-hero, children with data-h, words with data-words) ---------- */
 (function(){
   var hero = document.querySelector("[data-hero]"); if (!hero) return;
@@ -90,6 +105,8 @@ if (hasGsap && !reduced){
     gsap.from(w.querySelectorAll(".w"), {y: "0.6em", autoAlpha: 0, duration: .9, ease: "power3.out", stagger: .07, delay: .3}); });
 })();
 
+}catch(e){ __sectionFailed("hero entrance (data-hero, children with data-h, words with data-words)", e); }
+try{
 /* ---------- scroll reveals ---------- */
 (function(){
   var els = document.querySelectorAll("[data-reveal]"); if (!els.length) return;
@@ -103,11 +120,15 @@ if (hasGsap && !reduced){
   els.forEach(function(el){ io.observe(el); });
 })();
 
+}catch(e){ __sectionFailed("scroll reveals", e); }
+try{
 /* ---------- parallax (data-parallax = px to travel) ---------- */
 if (hasST && !reduced && !isTouch){
   gsap.utils.toArray("[data-parallax]").forEach(function(el){ var d = +el.dataset.parallax || 60; gsap.fromTo(el, {y: -d}, {y: d, ease: "none", scrollTrigger: {trigger: el.closest("section") || el, start: "top bottom", end: "bottom top", scrub: true}}); });
 }
 
+}catch(e){ __sectionFailed("parallax (data-parallax = px to travel)", e); }
+try{
 /* ---------- journey path draw + milestone blooms ---------- */
 (function(){
   var jp = document.getElementById("journeyPath"); if (!jp) return;
@@ -125,9 +146,13 @@ if (hasST && !reduced && !isTouch){
   }
 })();
 
+}catch(e){ __sectionFailed("journey path draw + milestone blooms", e); }
+try{
 /* ---------- gold line that draws on scroll (#lineDraw) ---------- */
 (function(){ var l = document.getElementById("lineDraw"); if (!l || !hasST || reduced) return; var len = l.getTotalLength(); gsap.set(l, {strokeDasharray: len, strokeDashoffset: len}); gsap.to(l, {strokeDashoffset: 0, ease: "none", scrollTrigger: {trigger: l.closest("section"), start: "top 75%", end: "bottom 70%", scrub: .5}}); })();
 
+}catch(e){ __sectionFailed("gold line that draws on scroll (#lineDraw)", e); }
+try{
 /* ---------- hero stage picker: [data-picker] > [data-pick] / [data-scene] ---------- */
 document.querySelectorAll("[data-picker]").forEach(function(box){
   var bs = box.querySelectorAll("[data-pick]"), sc = box.querySelectorAll("[data-scene]"), timer = null, idx = 0;
@@ -139,6 +164,8 @@ document.querySelectorAll("[data-picker]").forEach(function(box){
   restart();
 });
 
+}catch(e){ __sectionFailed("hero stage picker: [data-picker] > [data-pick] / [data-scene]", e); }
+try{
 /* ---------- tabs: [data-tabs] > [data-t] / [data-panel] ---------- */
 document.querySelectorAll("[data-tabs]").forEach(function(box){
   var tabs = box.querySelectorAll("[data-t]"), panels = box.querySelectorAll("[data-panel]");
@@ -148,6 +175,8 @@ document.querySelectorAll("[data-tabs]").forEach(function(box){
   var h = location.hash.replace("#",""); go(box.querySelector('[data-t="'+h+'"]') ? h : tabs[0].dataset.t);
 });
 
+}catch(e){ __sectionFailed("tabs: [data-tabs] > [data-t] / [data-panel]", e); }
+try{
 /* ---------- accordions (.qa .q / .a) unfurl ---------- */
 (function(){
   var qs = document.querySelectorAll(".qa .q"); if (!qs.length) return;
@@ -159,6 +188,8 @@ document.querySelectorAll("[data-tabs]").forEach(function(box){
     btn.addEventListener("click", function(){ var open = btn.getAttribute("aria-expanded") !== "true"; btn.setAttribute("aria-expanded", open ? "true" : "false"); set(p, open, true); }); });
 })();
 
+}catch(e){ __sectionFailed("accordions (.qa .q / .a) unfurl", e); }
+try{
 /* ---------- sticky story: [data-stage] drives [data-stage-art] ---------- */
 (function(){
   var arts = document.querySelectorAll("[data-stage-art]"); if (!arts.length || !("IntersectionObserver" in window)) return;
@@ -168,6 +199,8 @@ document.querySelectorAll("[data-tabs]").forEach(function(box){
   document.querySelectorAll("[data-stage]").forEach(function(s){ so.observe(s); });
 })();
 
+}catch(e){ __sectionFailed("sticky story: [data-stage] drives [data-stage-art]", e); }
+try{
 /* ---------- horizontal rail progress ([data-rail] + [data-rail-bar]) ---------- */
 (function(){
   var rail = document.querySelector("[data-rail]"), bar = document.querySelector("[data-rail-bar]"); if (!rail) return;
@@ -176,6 +209,8 @@ document.querySelectorAll("[data-tabs]").forEach(function(box){
   document.querySelectorAll("[data-rail-prev],[data-rail-next]").forEach(function(b){ b.addEventListener("click", function(){ var card = rail.querySelector(".rcard"); var w = card ? card.offsetWidth + 20 : 320; rail.scrollBy({left: b.hasAttribute("data-rail-next") ? w : -w, behavior: reduced ? "auto" : "smooth"}); }); });
 })();
 
+}catch(e){ __sectionFailed("horizontal rail progress ([data-rail] + [data-rail-bar])", e); }
+try{
 /* ---------- magnetic buttons (desktop only) ---------- */
 if (hasGsap && !reduced && !isTouch){
   document.querySelectorAll("[data-magnet]").forEach(function(b){
@@ -184,9 +219,13 @@ if (hasGsap && !reduced && !isTouch){
   });
 }
 
+}catch(e){ __sectionFailed("magnetic buttons (desktop only)", e); }
+try{
 /* ---------- cursor glow (.glow-follow) ---------- */
 (function(){ var g = document.querySelector(".glow-follow"); if (!g || isTouch || reduced) return; var x = 0, y = 0, tx = -400, ty = -400; window.addEventListener("mousemove", function(e){ tx = e.clientX; ty = e.clientY; }, {passive:true}); (function f(){ x += (tx-x)*.08; y += (ty-y)*.08; g.style.transform = "translate(" + (x-220) + "px," + (y-220) + "px)"; requestAnimationFrame(f); })(); })();
 
+}catch(e){ __sectionFailed("cursor glow (.glow-follow)", e); }
+try{
 /* ---------- tilt cards (desktop) ---------- */
 if (hasGsap && !reduced && !isTouch){
   document.querySelectorAll("[data-tilt]").forEach(function(c){
@@ -195,6 +234,8 @@ if (hasGsap && !reduced && !isTouch){
   });
 }
 
+}catch(e){ __sectionFailed("tilt cards (desktop)", e); }
+try{
 /* ---------- breathing guide: 4 in, 4 hold, 6 out ---------- */
 document.querySelectorAll("[data-breathe]").forEach(function(w){
   var lbl = w.querySelector("[data-blabel]"), ring = w.querySelector(".bring"), btn = w.querySelector("[data-bstart]"), bar = w.querySelector("[data-bbar]"), timer = null, on = false;
@@ -203,6 +244,8 @@ document.querySelectorAll("[data-breathe]").forEach(function(w){
   if (btn) btn.addEventListener("click", function(){ on = !on; w.classList.toggle("going", on); btn.innerHTML = on ? "Stop <small>थांबवा</small>" : "Start <small>सुरू करा</small>"; if (on){ run(0); } else { clearTimeout(timer); lbl.innerHTML = "Ready?<small>तयार?</small>"; if (ring) ring.className = "bring"; if (bar) bar.style.transform = "scaleX(0)"; } });
 });
 
+}catch(e){ __sectionFailed("breathing guide: 4 in, 4 hold, 6 out", e); }
+try{
 /* ---------- seed to tree: [data-growth-sec] holds <svg data-growth> + [data-stage-block] blocks ---------- */
 (function(){
   var sec = document.querySelector("[data-growth-sec]"); if (!sec) return;
@@ -226,6 +269,8 @@ document.querySelectorAll("[data-breathe]").forEach(function(w){
   blocks.forEach(function(b, i){ b.addEventListener("click", function(){ var r = sec.getBoundingClientRect(); var vh = window.innerHeight; var target = window.pageYOffset + r.top - vh * .55 + (thresholds[i] + .04) * (r.height - vh * .4); window.scrollTo({top: target, behavior: "smooth"}); }); });
 })();
 
+}catch(e){ __sectionFailed("seed to tree: [data-growth-sec] holds <svg data-growth> + [data-stage-block] blocks", e); }
+try{
 /* ---------- warli mural: [data-mural] reveals .wg groups one by one, ground line draws ---------- */
 (function(){
   document.querySelectorAll("[data-mural]").forEach(function(svg){
@@ -237,6 +282,8 @@ document.querySelectorAll("[data-breathe]").forEach(function(w){
   });
 })();
 
+}catch(e){ __sectionFailed("warli mural: [data-mural] reveals .wg groups one by one, ground line draws", e); }
+try{
 /* ---------- sketches draw themselves: <svg data-sketch> ---------- */
 (function(){
   var svgs = document.querySelectorAll("svg[data-sketch]"); if (!svgs.length) return;
@@ -253,6 +300,8 @@ document.querySelectorAll("[data-breathe]").forEach(function(w){
   });
 })();
 
+}catch(e){ __sectionFailed("sketches draw themselves: <svg data-sketch>", e); }
+try{
 /* ---------- belief chain: [data-chain] children reveal in sequence ---------- */
 (function(){
   var chains = document.querySelectorAll("[data-chain]"); if (!chains.length || !("IntersectionObserver" in window)) return;
@@ -260,6 +309,8 @@ document.querySelectorAll("[data-breathe]").forEach(function(w){
   chains.forEach(function(c){ io.observe(c); });
 })();
 
+}catch(e){ __sectionFailed("belief chain: [data-chain] children reveal in sequence", e); }
+try{
 /* ---------- counters: [data-count] ---------- */
 (function(){
   var els = document.querySelectorAll("[data-count]"); if (!els.length) return;
@@ -269,6 +320,8 @@ document.querySelectorAll("[data-breathe]").forEach(function(w){
   els.forEach(function(el){ io.observe(el); });
 })();
 
+}catch(e){ __sectionFailed("counters: [data-count]", e); }
+try{
 /* ---------- day cycle: [data-sky] changes the page's sky as you scroll ---------- */
 (function(){
   var root = document.querySelector("[data-sky]"); if (!root || reduced) return;
@@ -276,6 +329,8 @@ document.querySelectorAll("[data-breathe]").forEach(function(w){
   window.addEventListener("scroll", function(){ if (!t){ requestAnimationFrame(f); t = true; } }, {passive:true}); f();
 })();
 
+}catch(e){ __sectionFailed("day cycle: [data-sky] changes the page's sky as you scroll", e); }
+try{
 /* ---------- where are you today: [data-anytime] with [data-opt] buttons and [data-result] ---------- */
 document.querySelectorAll("[data-anytime]").forEach(function(box){
   var opts = box.querySelectorAll("[data-opt]"), cards = box.querySelectorAll("[data-from]"), res = box.querySelector("[data-result]");
@@ -290,6 +345,8 @@ document.querySelectorAll("[data-anytime]").forEach(function(box){
   var pre = box.getAttribute("data-anytime"); if (pre) go(pre);
 });
 
+}catch(e){ __sectionFailed("where are you today: [data-anytime] with [data-opt] buttons and [data-result]", e); }
+try{
 /* ---------- practices ---------- */
 document.querySelectorAll("[data-practice]").forEach(function(w){
   var kind = w.dataset.practice, btn = w.querySelector("[data-pstart]"), lbl = w.querySelector("[data-plabel]"), bar = w.querySelector("[data-pbar]"), rounds = w.querySelector("[data-prounds]");
@@ -337,6 +394,8 @@ document.querySelectorAll("[data-practice]").forEach(function(w){
   }
 });
 
+}catch(e){ __sectionFailed("practices", e); }
+try{
 /* ---------- booking: compose a WhatsApp message (+ optional live phone preview [data-bubble]) ---------- */
 var PHONE = "917760498085";
 var ENDPOINT = "";
@@ -489,6 +548,8 @@ document.querySelectorAll("[data-booking]").forEach(function(f){
 });
 document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = function(){ fs.querySelectorAll("label").forEach(function(l){ l.classList.toggle("on", l.querySelector("input").checked); }); }; fs.addEventListener("change", paint); paint(); });
 
+}catch(e){ __sectionFailed("booking: compose a WhatsApp message (+ optional live phone preview [data-bubble])", e); }
+try{
 /* ---------- current nav link ---------- */
 (function(){ var secs = document.querySelectorAll("section[id]"); var ls = document.querySelectorAll(".links a[href^='#'], .rail a[href^='#']"); if (!secs.length || !ls.length || !("IntersectionObserver" in window)) return;
   var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting){ ls.forEach(function(a){ a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id); }); } }); }, {rootMargin: "-40% 0px -55% 0px"});
@@ -500,7 +561,9 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
 /* The carousels run LAST and in their own guard. They used to sit in the middle of
    the one shared try{}, so any fault inside them silently killed every widget that
    came after: the stage picker, the practice panels, the helix and the sticky
-   header background. 13 Oct 2026, found from a phone recording. */
+   header background. 13 Oct 2026, found from a phone recording.
+   Every section now carries its own guard, added by build.mjs. */
+}catch(e){ __sectionFailed("current nav link", e); }
 try{
 /* ---------- phone carousels ----------
    On a phone the repeated blocks below stacked to between 2600 and 5200px each.
@@ -625,9 +688,9 @@ try{
   if (mq.addEventListener) mq.addEventListener("change", sync); else if (mq.addListener) mq.addListener(sync);
   sync();
 })();
-}catch(e){ if (window.console) console.error("carousels:", e); }
 
-}catch(e){ showAll(); if (window.console) console.error(e); }
+
+}catch(e){ __sectionFailed("phone carousels", e); }
 })();
 
 (function(){
