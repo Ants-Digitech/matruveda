@@ -532,6 +532,24 @@ h1,h2,h3{color:var(--struct2)}
 .crumbs a{color:var(--muted);text-decoration:none}
 .crumbs a:hover{color:var(--accT);text-decoration:underline}
 .crumbs [aria-current] span{color:var(--struct2);font-weight:600}
+/* what goes wrong, and why Matruveda, side by side */
+.clashgrid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(26px,5vw,76px);align-items:start;position:relative}
+.clashgrid::before{content:"";position:absolute;left:50%;top:4%;bottom:4%;width:1px;
+  background:linear-gradient(transparent,var(--line2) 18%,var(--line2) 82%,transparent)}
+.clash .side h2{font-size:clamp(1.3rem,2.2vw,1.9rem);margin:6px 0 8px}
+.clash .side .sub{margin:0;max-width:40ch}
+.clash .wrong{color:var(--muted)}
+.clash .wrong h2{color:var(--struct)}
+.plain{list-style:none;margin:clamp(16px,2vw,24px) 0 0;padding:0;display:grid;gap:clamp(12px,1.6vw,18px)}
+.plain li{position:relative;padding-left:20px}
+.plain li::before{content:"";position:absolute;left:0;top:.66em;width:9px;height:2px;border-radius:2px;background:var(--line2)}
+.clash .right .plain li::before{background:var(--acc)}
+.plain b{display:block;font-weight:600;font-size:1rem;line-height:1.35;color:var(--struct2)}
+.plain span{display:block;margin-top:4px;font-size:.9rem;line-height:1.55;color:var(--muted)}
+@media (max-width:860px){
+  .clashgrid{grid-template-columns:1fr;gap:30px}
+  .clashgrid::before{display:none}
+}
 /* nav */
 .nav{position:sticky;top:0;z-index:50;transition:background .35s,box-shadow .35s;border-bottom:1px solid transparent}
 .nav.scrolled{background:rgba(251,246,238,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-color:var(--line)}
