@@ -168,130 +168,6 @@ document.querySelectorAll("[data-tabs]").forEach(function(box){
   document.querySelectorAll("[data-stage]").forEach(function(s){ so.observe(s); });
 })();
 
-/* ---------- phone carousels ----------
-   On a phone the repeated blocks below stacked to between 2600 and 5200px each.
-   Here they become one swipe per item, with dots, arrows and a label naming the
-   item you are on. Nothing changes above 760px: the class and the nav are added
-   when the query matches and taken away again when it stops matching. */
-(function(){
-  var mq = window.matchMedia ? window.matchMedia("(max-width:760px)") : null; if (!mq) return;
-  /* [track selector, item selector, label selector inside an item, card styling] */
-  var SETS = [
-    [".jchapters", ".chapter", ".enbig", 1],
-    [".services.full .sgrid", ".scard", ".enline", 1],
-    [".pcards", ".pcard", ".enline", 0]
-  ];
-  var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
-  var live = [];
-
-  function build(track, itemSel, labSel, cardify){
-    var items = Array.prototype.slice.call(track.querySelectorAll(":scope > " + itemSel));
-    if (items.length < 2) return null;
-    var names = items.map(function(it, i){
-      var n = it.querySelector(labSel);
-      return (n && n.textContent.trim()) || ("Item " + (i + 1));
-    });
-    track.classList.add("mcar"); if (cardify) track.classList.add("cardify");
-    track.setAttribute("tabindex", "0");
-    track.setAttribute("aria-label", "Swipe sideways, " + items.length + " items");
-
-    var nav = document.createElement("div"); nav.className = "mcarnav";
-    var prev = document.createElement("button"); prev.type = "button"; prev.className = "mcarrow";
-    prev.innerHTML = ARROW; prev.setAttribute("aria-label", "Previous");
-    var next = document.createElement("button"); next.type = "button"; next.className = "mcarrow";
-    next.innerHTML = ARROW; next.style.transform = "rotate(180deg)"; next.setAttribute("aria-label", "Next");
-    nav.appendChild(prev);
-    var dots = items.map(function(it, i){
-      var d = document.createElement("button"); d.type = "button"; d.className = "mcd";
-      d.setAttribute("aria-label", names[i] + ", " + (i + 1) + " of " + items.length);
-      d.addEventListener("click", function(){ to(i); });
-      nav.appendChild(d); return d;
-    });
-    nav.appendChild(next);
-    var lab = document.createElement("p"); lab.className = "mcarlab";
-    lab.setAttribute("aria-live", "polite");
-
-    var holder = document.createElement("div"); holder.className = "mcarbits";
-    holder.appendChild(nav); holder.appendChild(lab);
-    track.parentNode.insertBefore(holder, track.nextSibling);
-
-    var at = 0;
-    function to(i){
-      i = Math.max(0, Math.min(items.length - 1, i));
-      var left = items[i].offsetLeft - (track.clientWidth - items[i].offsetWidth) / 2;
-      track.scrollTo({ left: left, behavior: reduced ? "auto" : "smooth" });
-    }
-    function near(){
-      var mid = track.scrollLeft + track.clientWidth / 2, best = 0, bd = 1e9;
-      for (var i = 0; i < items.length; i++){
-        var c = items[i].offsetLeft + items[i].offsetWidth / 2, d = Math.abs(c - mid);
-        if (d < bd){ bd = d; best = i; }
-      }
-      return best;
-    }
-    function paint(){
-      at = near();
-      for (var i = 0; i < dots.length; i++) dots[i].classList.toggle("on", i === at);
-      lab.innerHTML = "<b>" + names[at] + "</b> &middot; " + (at + 1) + " of " + items.length;
-      prev.disabled = at === 0; next.disabled = at === items.length - 1;
-    }
-    var tick = false;
-    function onScroll(){ if (!tick){ tick = true; requestAnimationFrame(function(){ tick = false; paint(); }); } }
-    track.addEventListener("scroll", onScroll, { passive: true });
-    prev.addEventListener("click", function(){ to(near() - 1); });
-    next.addEventListener("click", function(){ to(near() + 1); });
-    track.addEventListener("keydown", function(e){
-      if (e.key === "ArrowRight"){ e.preventDefault(); to(near() + 1); }
-      if (e.key === "ArrowLeft"){ e.preventDefault(); to(near() - 1); }
-    });
-    paint();
-    return { items: items, to: to, off: function(){
-      track.removeEventListener("scroll", onScroll);
-      track.classList.remove("mcar", "cardify");
-      track.removeAttribute("tabindex"); track.removeAttribute("aria-label");
-      if (holder.parentNode) holder.parentNode.removeChild(holder);
-      track.scrollLeft = 0;
-    } };
-  }
-
-  /* the practices page prints all five widgets one under the other, 3683px.
-     They have no wrapper of their own, so the track is whichever element holds them. */
-  function practiceTrack(){
-    var first = document.querySelector(".sec > .wrap > article.practice");
-    if (!first) return null;
-    var w = first.parentNode;
-    return w.querySelectorAll(":scope > article.practice").length >= 3 ? w : null;
-  }
-
-  function on(){
-    if (live.length) return;
-    SETS.forEach(function(s){
-      document.querySelectorAll(s[0]).forEach(function(t){
-        var c = build(t, s[1], s[2], s[3]); if (c) live.push(c.off);
-      });
-    });
-    var pt = practiceTrack();
-    if (!pt) return;
-    pt.classList.add("practrack");
-    var c = build(pt, "article.practice", ".pk small", 0);
-    if (!c) { pt.classList.remove("practrack"); return; }
-    /* the chip strip above jumps by anchor, which cannot move a sideways track */
-    var jump = function(e){
-      var a = e.target.closest ? e.target.closest(".pjump a[href^='#']") : null; if (!a) return;
-      var t = document.getElementById(a.getAttribute("href").slice(1)); if (!t) return;
-      var i = c.items.indexOf(t.closest("article.practice")); if (i < 0) return;
-      e.preventDefault(); pt.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
-      c.to(i);
-    };
-    document.addEventListener("click", jump);
-    live.push(function(){ document.removeEventListener("click", jump); pt.classList.remove("practrack"); c.off(); });
-  }
-  function off(){ live.forEach(function(f){ f(); }); live = []; }
-  function sync(){ if (mq.matches) on(); else off(); }
-  if (mq.addEventListener) mq.addEventListener("change", sync); else if (mq.addListener) mq.addListener(sync);
-  sync();
-})();
-
 /* ---------- horizontal rail progress ([data-rail] + [data-rail-bar]) ---------- */
 (function(){
   var rail = document.querySelector("[data-rail]"), bar = document.querySelector("[data-rail-bar]"); if (!rail) return;
@@ -620,6 +496,136 @@ document.querySelectorAll("[data-chips]").forEach(function(fs){ var paint = func
   var top = document.getElementById("top"); if (top){ var tio = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) ls.forEach(function(a){ a.classList.toggle("on", a.getAttribute("href") === "#top"); }); }); }, {rootMargin: "0px 0px -60% 0px"}); tio.observe(top); }
   /* hooks: smooth scroll and mark as passed */
   document.querySelectorAll("[data-hook]").forEach(function(h){ h.addEventListener("click", function(ev){ var t = document.querySelector(h.getAttribute("href")); if (!t) return; ev.preventDefault(); t.scrollIntoView({behavior: reduced ? "auto" : "smooth", block: "start"}); }); }); })();
+
+/* The carousels run LAST and in their own guard. They used to sit in the middle of
+   the one shared try{}, so any fault inside them silently killed every widget that
+   came after: the stage picker, the practice panels, the helix and the sticky
+   header background. 13 Oct 2026, found from a phone recording. */
+try{
+/* ---------- phone carousels ----------
+   On a phone the repeated blocks below stacked to between 2600 and 5200px each.
+   Here they become one swipe per item, with dots, arrows and a label naming the
+   item you are on. Nothing changes above 760px: the class and the nav are added
+   when the query matches and taken away again when it stops matching. */
+(function(){
+  var mq = window.matchMedia ? window.matchMedia("(max-width:760px)") : null; if (!mq) return;
+  /* [track selector, item selector, label selector inside an item, card styling] */
+  var SETS = [
+    [".jchapters", ".chapter", ".enbig", 1],
+    [".services.full .sgrid", ".scard", ".enline", 1],
+    [".pcards", ".pcard", ".enline", 0]
+  ];
+  var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
+  var live = [];
+
+  function build(track, itemSel, labSel, cardify){
+    var items = Array.prototype.slice.call(track.querySelectorAll(":scope > " + itemSel));
+    if (items.length < 2) return null;
+    var names = items.map(function(it, i){
+      var n = it.querySelector(labSel);
+      return (n && n.textContent.trim()) || ("Item " + (i + 1));
+    });
+    track.classList.add("mcar"); if (cardify) track.classList.add("cardify");
+    track.setAttribute("tabindex", "0");
+    track.setAttribute("aria-label", "Swipe sideways, " + items.length + " items");
+
+    var nav = document.createElement("div"); nav.className = "mcarnav";
+    var prev = document.createElement("button"); prev.type = "button"; prev.className = "mcarrow";
+    prev.innerHTML = ARROW; prev.setAttribute("aria-label", "Previous");
+    var next = document.createElement("button"); next.type = "button"; next.className = "mcarrow";
+    next.innerHTML = ARROW; next.style.transform = "rotate(180deg)"; next.setAttribute("aria-label", "Next");
+    nav.appendChild(prev);
+    var dots = items.map(function(it, i){
+      var d = document.createElement("button"); d.type = "button"; d.className = "mcd";
+      d.setAttribute("aria-label", names[i] + ", " + (i + 1) + " of " + items.length);
+      d.addEventListener("click", function(){ to(i); });
+      nav.appendChild(d); return d;
+    });
+    nav.appendChild(next);
+    var lab = document.createElement("p"); lab.className = "mcarlab";
+    lab.setAttribute("aria-live", "polite");
+
+    var holder = document.createElement("div"); holder.className = "mcarbits";
+    holder.appendChild(nav); holder.appendChild(lab);
+    track.parentNode.insertBefore(holder, track.nextSibling);
+
+    var at = 0;
+    function to(i){
+      i = Math.max(0, Math.min(items.length - 1, i));
+      var left = items[i].offsetLeft - (track.clientWidth - items[i].offsetWidth) / 2;
+      track.scrollTo({ left: left, behavior: reduced ? "auto" : "smooth" });
+    }
+    function near(){
+      var mid = track.scrollLeft + track.clientWidth / 2, best = 0, bd = 1e9;
+      for (var i = 0; i < items.length; i++){
+        var c = items[i].offsetLeft + items[i].offsetWidth / 2, d = Math.abs(c - mid);
+        if (d < bd){ bd = d; best = i; }
+      }
+      return best;
+    }
+    function paint(){
+      at = near();
+      for (var i = 0; i < dots.length; i++) dots[i].classList.toggle("on", i === at);
+      lab.innerHTML = "<b>" + names[at] + "</b> &middot; " + (at + 1) + " of " + items.length;
+      prev.disabled = at === 0; next.disabled = at === items.length - 1;
+    }
+    var tick = false;
+    function onScroll(){ if (!tick){ tick = true; requestAnimationFrame(function(){ tick = false; paint(); }); } }
+    track.addEventListener("scroll", onScroll, { passive: true });
+    prev.addEventListener("click", function(){ to(near() - 1); });
+    next.addEventListener("click", function(){ to(near() + 1); });
+    track.addEventListener("keydown", function(e){
+      if (e.key === "ArrowRight"){ e.preventDefault(); to(near() + 1); }
+      if (e.key === "ArrowLeft"){ e.preventDefault(); to(near() - 1); }
+    });
+    paint();
+    return { items: items, to: to, off: function(){
+      track.removeEventListener("scroll", onScroll);
+      track.classList.remove("mcar", "cardify");
+      track.removeAttribute("tabindex"); track.removeAttribute("aria-label");
+      if (holder.parentNode) holder.parentNode.removeChild(holder);
+      track.scrollLeft = 0;
+    } };
+  }
+
+  /* the practices page prints all five widgets one under the other, 3683px.
+     They have no wrapper of their own, so the track is whichever element holds them. */
+  function practiceTrack(){
+    var first = document.querySelector(".sec > .wrap > article.practice");
+    if (!first) return null;
+    var w = first.parentNode;
+    return w.querySelectorAll(":scope > article.practice").length >= 3 ? w : null;
+  }
+
+  function on(){
+    if (live.length) return;
+    SETS.forEach(function(s){
+      document.querySelectorAll(s[0]).forEach(function(t){
+        var c = build(t, s[1], s[2], s[3]); if (c) live.push(c.off);
+      });
+    });
+    var pt = practiceTrack();
+    if (!pt) return;
+    pt.classList.add("practrack");
+    var c = build(pt, "article.practice", ".pk small", 0);
+    if (!c) { pt.classList.remove("practrack"); return; }
+    /* the chip strip above jumps by anchor, which cannot move a sideways track */
+    var jump = function(e){
+      var a = e.target.closest ? e.target.closest(".pjump a[href^='#']") : null; if (!a) return;
+      var t = document.getElementById(a.getAttribute("href").slice(1)); if (!t) return;
+      var i = c.items.indexOf(t.closest("article.practice")); if (i < 0) return;
+      e.preventDefault(); pt.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
+      c.to(i);
+    };
+    document.addEventListener("click", jump);
+    live.push(function(){ document.removeEventListener("click", jump); pt.classList.remove("practrack"); c.off(); });
+  }
+  function off(){ live.forEach(function(f){ f(); }); live = []; }
+  function sync(){ if (mq.matches) on(); else off(); }
+  if (mq.addEventListener) mq.addEventListener("change", sync); else if (mq.addListener) mq.addListener(sync);
+  sync();
+})();
+}catch(e){ if (window.console) console.error("carousels:", e); }
 
 }catch(e){ showAll(); if (window.console) console.error(e); }
 })();
