@@ -501,7 +501,8 @@ h1,h2,h3{color:var(--struct2)}
 .h3{font-size:1.3rem}.h4{font-size:1.1rem}
 /* journey dropdown in the menu */
 .links .has-dd{position:relative}
-.links .has-dd>a{gap:6px}
+.links .has-dd>a{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.links .has-dd>a::after{flex:0 0 auto;margin-top:-3px}
 .links .has-dd>a::after{content:"";width:7px;height:7px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .25s}
 .links .has-dd.open>a::after,.links .has-dd:hover>a::after{transform:rotate(225deg) translateY(-2px)}
 .dd{position:absolute;left:-8px;top:100%;min-width:290px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px;box-shadow:0 30px 50px -30px rgba(43,30,20,.5);display:grid;gap:2px;opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .22s,transform .22s,visibility .22s;z-index:60}
@@ -1001,6 +1002,40 @@ body.modal-open{overflow:hidden}
 }
 @media (max-width:980px){.ftr .cols{grid-template-columns:1fr 1fr;gap:32px}.ostrip{grid-template-columns:repeat(2,minmax(0,1fr))}.fees,.catgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.vgrid{grid-template-columns:1fr}.vframe.big{grid-row:auto}.mgrid{grid-template-columns:minmax(0,1fr)}.mside .mini{max-width:220px;margin:0 auto}.hero .wrap{grid-template-columns:minmax(0,1fr)}.kamal{width:min(100%,380px)}.ftr .cols{grid-template-columns:1fr 1fr}.pgrid4{grid-template-columns:1fr 1fr}.ptwo,.jgrid,.fgrid2{grid-template-columns:minmax(0,1fr)}.jnodes{gap:6px}.jn .jm{width:48px;height:64px}.jn .nm{font-size:.86rem}.jn{padding-top:0}.jline{display:none}.rtrack button .rl{font-size:.92rem}.rtrack button small{display:none}.jside{position:static;max-width:280px;margin:0 auto 20px}.strip5{grid-template-columns:repeat(5,minmax(0,1fr))}.strip5 .go{grid-column:1/-1}.strip5::before{right:24px}.pslide,.pintro{grid-template-columns:minmax(0,1fr)}.pslide .sil-wrap,.pintro .sil-wrap{max-width:280px}}
 @media (max-width:640px){.pgrid4{grid-template-columns:1fr}.strip5{grid-template-columns:repeat(2,minmax(0,1fr))}.strip5::before{display:none}.fc{grid-template-columns:1fr}.fc img{width:100%;height:220px}}
+/* ---------- a box marks something you can act on, not a line of text ----------
+   13 Oct 2026 census at 1440: 178 bordered boxes across 7 pages, 69 of them inside
+   another box. On the services page a card held a photograph and four pill boxes,
+   each carrying one short line. SMK: "Cards makes it look template based and makes
+   you skip the content." The phone and the home page were fixed first; this is the
+   same treatment everywhere. Cards, panels and form controls keep their borders
+   because you click or type in them. Lines of text become lines of text. */
+.focus li,.fmt li,.slist li,.svlist li,.pben span,.benlist li,.ulist li{
+  background:none;border:0;border-radius:0;box-shadow:none;padding:0 0 0 18px;
+  margin:0 0 9px;position:relative;line-height:1.5}
+.focus li::before,.fmt li::before,.slist li::before,.svlist li::before,
+.pben span::before,.benlist li::before,.ulist li::before{
+  content:"";position:absolute;left:1px;top:.62em;width:6px;height:6px;
+  border-radius:50%;background:var(--acc);opacity:.85}
+.focus li::marker,.fmt li::marker,.slist li::marker,.svlist li::marker{content:""}
+.focus,.fmt,.slist,.svlist,.benlist,.ulist{display:block;gap:0;list-style:none;padding-left:0}
+.pben{gap:0}
+.slist.plain li::before{background:var(--struct);opacity:.55}
+/* the fee row was four separate bordered boxes for four short facts */
+.fees{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);
+      gap:0;overflow:hidden}
+.fees>div{border:0;border-radius:0;background:none;box-shadow:none;
+          border-left:1px solid var(--line);padding:18px 20px}
+.fees>div:first-child{border-left:0}
+@media (max-width:980px){.fees>div:nth-child(odd){border-left:0}
+  .fees>div:nth-child(n+3){border-top:1px solid var(--line)}}
+/* the two headline stats sat in boxes beside a flattened list, which made them
+   the heaviest thing on the page. The hero already shows them without a box. */
+.sec.why .stats>div{background:none;border:0;box-shadow:none;padding:0 28px 0 0}
+.sec.why .stats{gap:clamp(24px,4vw,56px);justify-content:start}
+/* the about page reason cards: same thinking, a rule instead of a box */
+.wgrid .wcard{background:none;border:0;border-radius:0;box-shadow:none;
+              padding:2px 0 2px 18px;border-left:2px solid var(--line)}
+.wgrid .wcard .icw{display:none}
 @media (max-width:760px){.nav .btn{display:none}.ftr{padding-bottom:120px}}
 @media (max-width:640px){.ftr .cols{grid-template-columns:1fr}.ftr .bottom{flex-direction:column;align-items:flex-start}.ostrip{grid-template-columns:1fr}.fees,.catgrid{grid-template-columns:1fr}.pnames{display:none;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;width:min(100%,380px);margin:0 auto;text-align:center}.pnames span{display:grid;line-height:1.1;transition:opacity .4s}.pnames span.dim{opacity:.35}.pnames b{font-weight:400;font-size:.95rem;color:var(--struct2)}.pnames small{font-size:.58rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}}
 @media (prefers-reduced-motion:reduce){.lotus .petal{transition:none}.hero-lotus,.lhint i{animation:none}.ptx .ptxt{opacity:1}}
@@ -1075,28 +1110,10 @@ small{opacity:1}
   .mcarlab{display:block;text-align:center;margin:8px 0 0;font-size:.82rem;color:var(--muted)}
   .mcarlab b{color:var(--struct);font-weight:600}
 
-  /* ================= 2. a bullet is a bullet =================
-     Every one of these lists printed each line inside its own bordered box.
-     On a 390px screen that is 26px of chrome for 20px of text, four times per
-     card, six cards per page. */
-  .focus li,.fmt li,.slist li,.pben span,.scard .svlist li,.benlist li,.ulist li{
-      background:none!important;border:0!important;border-radius:0!important;
-      padding:0 0 0 17px!important;box-shadow:none!important;position:relative;
-      margin:0 0 7px!important;font-size:.93rem;line-height:1.46}
-  .focus li::before,.fmt li::before,.slist li::before,.pben span::before,
-  .scard .svlist li::before,.benlist li::before,.ulist li::before{
-      content:"";position:absolute;left:1px;top:.62em;width:6px;height:6px;
-      border-radius:50%;background:var(--acc);opacity:.85}
-  .focus li::marker,.fmt li::marker,.slist li::marker{content:""}
-  .focus,.fmt,.slist,.scard .svlist,.benlist,.ulist{gap:0!important;display:block!important}
-  .pben{gap:0!important}
-
-  /* the same thinking for the reason cards on the about page: a bordered box per
-     reason made the page look generated and invited skipping past it */
-  .wgrid{display:block!important}
-  .wgrid .wcard{background:none;border:0;border-radius:0;box-shadow:none;padding:0 0 0 15px;
-                margin:0 0 16px;border-left:2px solid var(--line);position:relative}
-  .wgrid .wcard .icw{display:none}
+  /* The bullet flattening and the about-page reason list moved into the design
+     CSS on 13 Oct 2026 so wide screens get them too. Only the phone sizing stays. */
+  .focus li,.fmt li,.slist li,.svlist li,.pben span{font-size:.93rem;line-height:1.46;margin-bottom:7px}
+  .wgrid .wcard{margin:0 0 16px;padding-left:15px}
   .wgrid .wcard h3{font-size:1.02rem;margin:0 0 3px}
   .wgrid .wcard p{font-size:.93rem;line-height:1.5;margin:0}
 
