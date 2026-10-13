@@ -641,8 +641,28 @@ try{
       if (e.key === "ArrowRight"){ e.preventDefault(); to(near() + 1); }
       if (e.key === "ArrowLeft"){ e.preventDefault(); to(near() - 1); }
     });
+    /* On a wide screen, picking a month highlights your stage where it already is,
+       so you see the answer without moving. In a carousel the answer can be four
+       swipes away, which reads as nothing having happened. When a slide becomes the
+       chosen one, the track goes to it, the same way the wide layout points at it. */
+    var chosen = null;
+    function follow(){
+      for (var i = 0; i < items.length; i++){
+        if (items[i].classList.contains("now")){
+          if (items[i] !== chosen){ chosen = items[i]; to(i); }
+          return;
+        }
+      }
+    }
+    if (window.MutationObserver){
+      var mo = new MutationObserver(function(){ follow(); });
+      mo.observe(track, { attributes: true, attributeFilter: ["class"], subtree: true });
+    }
+    follow();
+
     paint();
     return { items: items, to: to, off: function(){
+      if (mo) mo.disconnect();
       track.removeEventListener("scroll", onScroll);
       track.classList.remove("mcar", "cardify");
       track.removeAttribute("tabindex"); track.removeAttribute("aria-label");
