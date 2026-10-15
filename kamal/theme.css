@@ -533,7 +533,7 @@ h1,h2,h3{color:var(--struct2)}
 .crumbs a{color:var(--muted);text-decoration:none}
 .crumbs a:hover{color:var(--accT);text-decoration:underline}
 .crumbs [aria-current] span{color:var(--struct2);font-weight:600}
-/* what goes wrong, and why Matruveda, side by side */
+/* what goes wrong, and why Matruvedh, side by side */
 .clashgrid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(26px,5vw,76px);align-items:start;position:relative}
 .clashgrid::before{content:"";position:absolute;left:50%;top:4%;bottom:4%;width:1px;
   background:linear-gradient(transparent,var(--line2) 18%,var(--line2) 82%,transparent)}

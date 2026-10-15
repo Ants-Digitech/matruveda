@@ -403,12 +403,12 @@ function val(f, n){ var el = f.elements[n]; if (!el) return ""; if (el.length &&
 function line(k, v){ return v ? k + ": " + v + "\n" : ""; }
 function compose(f){
   if (f.getAttribute("data-kind") === "guide"){
-    return "नमस्कार Matruveda,\nPlease send me the five free practices as a one page guide.\n" + line("Contact", val(f,"phone")) + "\n(sent from matruvedh.com)";
+    return "नमस्कार Matruvedh,\nPlease send me the five free practices as a one page guide.\n" + line("Contact", val(f,"phone")) + "\n(sent from matruvedh.com)";
   }
   var prog = val(f,"program") || "(program)";
   var sf = f.querySelector("[data-stagefield]");
   var stage = (sf && sf.hidden) ? "" : val(f,"stage");
-  return "नमस्कार Matruveda,\nI would like to know about " + prog + ".\n" + line("Name", val(f,"name")) + line("For", val(f,"for")) + line("Stage", stage) + line("Pincode", val(f,"pincode")) + line("Place", [val(f,"city"), val(f,"state"), val(f,"country")].filter(Boolean).join(", ")) + line("Preferred time", val(f,"slot")) + line("Contact", val(f,"phone")) + (val(f,"msg") ? "\n" + val(f,"msg") + "\n" : "") + "\n(sent from matruvedh.com)";
+  return "नमस्कार Matruvedh,\nI would like to know about " + prog + ".\n" + line("Name", val(f,"name")) + line("For", val(f,"for")) + line("Stage", stage) + line("Pincode", val(f,"pincode")) + line("Place", [val(f,"city"), val(f,"state"), val(f,"country")].filter(Boolean).join(", ")) + line("Preferred time", val(f,"slot")) + line("Contact", val(f,"phone")) + (val(f,"msg") ? "\n" + val(f,"msg") + "\n" : "") + "\n(sent from matruvedh.com)";
 }
 document.querySelectorAll("[data-booking]").forEach(function(f){
   var q = new URLSearchParams(location.search).get("p"), sel = f.elements.program;
@@ -535,7 +535,7 @@ document.querySelectorAll("[data-booking]").forEach(function(f){
       try {
         fetch(ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) })
           .then(function(r){ if (!r.ok) throw new Error("bad status"); restore();
-            showDone("We have your request.", "It reached Matruveda just now. We call back within a day.", false); })
+            showDone("We have your request.", "It reached Matruvedh just now. We call back within a day.", false); })
           ["catch"](function(){ restore();
             showDone("Send it on WhatsApp.", "We could not reach our desk just now, so please send this on WhatsApp instead.", true);
             try { window.open(url, "_blank", "noopener"); } catch(e){} });
