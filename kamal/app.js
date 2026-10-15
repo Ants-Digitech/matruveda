@@ -397,18 +397,18 @@ document.querySelectorAll("[data-practice]").forEach(function(w){
 }catch(e){ __sectionFailed("practices", e); }
 try{
 /* ---------- booking: compose a WhatsApp message (+ optional live phone preview [data-bubble]) ---------- */
-var PHONE = "917760498085";
+var PHONE = "918668527202";
 var ENDPOINT = "";
 function val(f, n){ var el = f.elements[n]; if (!el) return ""; if (el.length && el[0] && el[0].type === "radio"){ for (var i=0;i<el.length;i++) if (el[i].checked) return el[i].value; return ""; } return (el.value || "").trim(); }
 function line(k, v){ return v ? k + ": " + v + "\n" : ""; }
 function compose(f){
   if (f.getAttribute("data-kind") === "guide"){
-    return "नमस्कार Matruveda,\nPlease send me the five free practices as a one page guide.\n" + line("Contact", val(f,"phone")) + "\n(sent from matruveda.in)";
+    return "नमस्कार Matruveda,\nPlease send me the five free practices as a one page guide.\n" + line("Contact", val(f,"phone")) + "\n(sent from matruvedh.com)";
   }
   var prog = val(f,"program") || "(program)";
   var sf = f.querySelector("[data-stagefield]");
   var stage = (sf && sf.hidden) ? "" : val(f,"stage");
-  return "नमस्कार Matruveda,\nI would like to know about " + prog + ".\n" + line("Name", val(f,"name")) + line("For", val(f,"for")) + line("Stage", stage) + line("Pincode", val(f,"pincode")) + line("Place", [val(f,"city"), val(f,"state"), val(f,"country")].filter(Boolean).join(", ")) + line("Preferred time", val(f,"slot")) + line("Contact", val(f,"phone")) + (val(f,"msg") ? "\n" + val(f,"msg") + "\n" : "") + "\n(sent from matruveda.in)";
+  return "नमस्कार Matruveda,\nI would like to know about " + prog + ".\n" + line("Name", val(f,"name")) + line("For", val(f,"for")) + line("Stage", stage) + line("Pincode", val(f,"pincode")) + line("Place", [val(f,"city"), val(f,"state"), val(f,"country")].filter(Boolean).join(", ")) + line("Preferred time", val(f,"slot")) + line("Contact", val(f,"phone")) + (val(f,"msg") ? "\n" + val(f,"msg") + "\n" : "") + "\n(sent from matruvedh.com)";
 }
 document.querySelectorAll("[data-booking]").forEach(function(f){
   var q = new URLSearchParams(location.search).get("p"), sel = f.elements.program;
